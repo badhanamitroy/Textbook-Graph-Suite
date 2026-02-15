@@ -89,6 +89,35 @@
       font-size:12px;
       line-height:1.35;
     }
+
+    /* ==========================================================
+       ✅ FIX: Make left panel scrollable (sticky + inner scroll)
+       ========================================================== */
+    .wrap{ align-items:start; }
+
+    /* On desktop (two-column layout), keep the left card sticky */
+    @media (min-width: 1101px){
+      .wrap > .card:first-child{
+        position: sticky;
+        top: 86px; /* adjust to your topbar height if needed */
+      }
+      .wrap > .card:first-child .body{
+        max-height: calc(100vh - 120px);
+        overflow: auto;
+        padding-right: 10px; /* keep scrollbar off content */
+      }
+    }
+
+    /* optional scrollbar styling */
+    .wrap > .card:first-child .body::-webkit-scrollbar{ width: 10px; }
+    .wrap > .card:first-child .body::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+    }
+    .wrap > .card:first-child .body::-webkit-scrollbar-track{
+      background: rgba(0,0,0,0.12);
+      border-radius: 999px;
+    }
   </style>
 </head>
 
@@ -128,6 +157,12 @@
             </div>
 
             <div class="sheetWrap">
+              <div class="sheetBtns">
+                <button id="o_addRow">+ Row</button>
+                <button id="o_delRow">− Row</button>
+                <button class="good" id="o_useTable">Use Table → Draw</button>
+              </div>
+
               <table class="paperTable" id="o_table">
                 <thead>
                   <tr>
@@ -139,12 +174,6 @@
                 </thead>
                 <tbody></tbody>
               </table>
-
-              <div class="sheetBtns">
-                <button id="o_addRow">+ Row</button>
-                <button id="o_delRow">− Row</button>
-                <button class="good" id="o_useTable">Use Table → Draw</button>
-              </div>
 
               <div class="sheetHint">
                 ✅ Paste works (tab/newline).<br/>
@@ -218,45 +247,45 @@
             </div>
           </div>
 
-          <!-- ===== Axis annotation inputs (FIXED: ogive uses o_... ids) ===== -->
           <div class="section">Axis annotations</div>
 
+          <!-- ✅ NOTE: Keeping your IDs as-is ("h_*") so your JS works without changes -->
           <div class="two">
             <div>
               <label style="color:var(--muted);font-size:13px;">X-axis label text</label>
-              <input id="o_xLabelText" value="অবিচ্ছিন্ন শ্রেনীসীমা →" />
+              <input id="h_xLabelText" value="অবিচ্ছিন্ন শ্রেনীসীমা →" />
             </div>
             <div>
               <label style="color:var(--muted);font-size:13px;">Y-axis label text</label>
-              <input id="o_yLabelText" value="ক্রমযোজিত গণসংখ্যা ↑" />
+              <input id="h_yLabelText" value="ক্রমযোজিত গণসংখ্যা →" />
             </div>
           </div>
 
           <div class="two">
             <label style="display:flex;align-items:center;gap:10px;">
-              <input id="o_showAxisLabels" type="checkbox" checked />
+              <input id="h_showAxisLabels" type="checkbox" checked />
               <span style="color:var(--muted);font-size:13px;">Show axis labels</span>
             </label>
             <label style="display:flex;align-items:center;gap:10px;">
-              <input id="o_axisLabelArrows" type="checkbox" checked />
+              <input id="h_axisLabelArrows" type="checkbox" checked />
               <span style="color:var(--muted);font-size:13px;">Include arrow (↑ / →)</span>
             </label>
           </div>
 
           <div class="row">
             <label>Axis label font size</label>
-            <input id="o_fontAxisLabel" type="range" min="10" max="40" value="18" step="1" />
-            <div class="val" id="o_fontAxisLabelVal"></div>
+            <input id="h_fontAxisLabel" type="range" min="10" max="40" value="18" step="1" />
+            <div class="val" id="h_fontAxisLabelVal"></div>
           </div>
 
           <div class="two">
             <div>
               <label style="color:var(--muted);font-size:13px;">X label offset (px)</label>
-              <input id="o_xLabelOffset" type="number" value="45" />
+              <input id="h_xLabelOffset" type="number" value="45" />
             </div>
             <div>
               <label style="color:var(--muted);font-size:13px;">Y label offset (px)</label>
-              <input id="o_yLabelOffset" type="number" value="55" />
+              <input id="h_yLabelOffset" type="number" value="55" />
             </div>
           </div>
 
@@ -391,7 +420,7 @@ function makeTableGrid(opts){
     const startTd = active.closest("td");
     const startTr = active.closest("tr");
     const r0 = [...tbody.children].indexOf(startTr);
-    const c0 = [...startTr.querySelectorAll("td")].indexOf(startTd) - 1; // ignore index col
+    const c0 = [...startTr.querySelectorAll("td")].indexOf(startTd) - 1; // ignore index column
 
     while(tbody.children.length < r0 + grid.length) addRow();
 
@@ -460,17 +489,13 @@ function makeTableGrid(opts){
     setVal('o_fontAxisVal','o_fontAxis');
     setVal('o_fontTicksVal','o_fontTicks');
     setVal('o_fontPointVal','o_fontPoint');
-    setVal('o_fontAxisLabelVal','o_fontAxisLabel');
+    setVal('h_fontAxisLabelVal','h_fontAxisLabel');
   }
 
   function parsePair(s){
     const [a,b] = String(s).split(',').map(t => Number(t.trim()));
     if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
     return [a,b];
-  }
-
-  function clamp(v, lo, hi){
-    return Math.max(lo, Math.min(hi, v));
   }
 
   function parseData(text){
@@ -612,16 +637,15 @@ function makeTableGrid(opts){
   }
 
   function drawAxisAnnotations(params){
-    if(!document.getElementById("o_showAxisLabels")?.checked) return;
+    if(!document.getElementById("h_showAxisLabels")?.checked) return;
 
-    const xTextRaw = document.getElementById("o_xLabelText")?.value ?? "";
-    const yTextRaw = document.getElementById("o_yLabelText")?.value ?? "";
-    const addArrows = document.getElementById("o_axisLabelArrows")?.checked;
+    const xTextRaw = document.getElementById("h_xLabelText")?.value ?? "";
+    const yTextRaw = document.getElementById("h_yLabelText")?.value ?? "";
+    const addArrows = document.getElementById("h_axisLabelArrows")?.checked;
 
-    const xOffset = Number(document.getElementById("o_xLabelOffset")?.value ?? 45);
-    const yOffset = Number(document.getElementById("o_yLabelOffset")?.value ?? 55);
-
-    const size = Number(document.getElementById("o_fontAxisLabel")?.value ?? 18);
+    const xOffset = Number(document.getElementById("h_xLabelOffset")?.value ?? 45);
+    const yOffset = Number(document.getElementById("h_yLabelOffset")?.value ?? 55);
+    const size = Number(document.getElementById("h_fontAxisLabel")?.value ?? 18);
 
     const xText = addArrows ? xTextRaw : xTextRaw.replace(/[→➡]/g, "").trim();
     const yText = addArrows ? yTextRaw : yTextRaw.replace(/[↑⬆]/g, "").trim();
@@ -745,13 +769,11 @@ function makeTableGrid(opts){
     return pts;
   }
 
-  // For dragging: store hitboxes for ONLY "data" points
   let pointHit = []; // {rowIndex, cx, cy, r}
   const dragState = {active:false, mode:null, rowIndex:-1, startOx:0, startOy:0, startMx:0, startMy:0};
 
   function drawOgiveCurve(points, params, fonts){
     pointHit = [];
-
     const w = Math.max(1, Number($('o_curveW')?.value ?? 4));
 
     ctx.save();
@@ -776,10 +798,7 @@ function makeTableGrid(opts){
         const [px,py] = worldToCanvas(p.x,p.y, params);
         const r = 5;
         ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
-
-        if(p.kind === "data"){
-          pointHit.push({rowIndex:p.rowIndex, cx:px, cy:py, r:10});
-        }
+        if(p.kind === "data") pointHit.push({rowIndex:p.rowIndex, cx:px, cy:py, r:10});
       }
     }
 
@@ -876,6 +895,7 @@ function makeTableGrid(opts){
 
       const pts = buildOgivePoints(rows);
       drawOgiveCurve(pts, params, fonts);
+
     }catch(e){
       console.warn(e.message);
     }
@@ -903,6 +923,8 @@ function makeTableGrid(opts){
     cv.classList.remove("can-grab","grabbing","can-move-point");
     if(mode) cv.classList.add(mode);
   }
+
+  function clamp(v, lo, hi){ return Math.max(lo, Math.min(hi, v)); }
 
   function rowsToText(rows){
     return rows.map(r => `${r.lo},${r.hi},${r.cf}`).join("\n");
@@ -946,7 +968,6 @@ function makeTableGrid(opts){
         const i = dragState.rowIndex;
         if(i < 0 || i >= rows.length) return;
 
-        // enforce monotonic CF:
         const prev = (i === 0) ? 0 : rows[i-1].cf;
         const next = (i === rows.length-1) ? Infinity : rows[i+1].cf;
 
@@ -968,7 +989,6 @@ function makeTableGrid(opts){
       }
     }
 
-    // hover cursor
     const pi = hitTestPoint(mx,my);
     if(pi >= 0){
       setCursor("can-move-point");
@@ -1057,10 +1077,11 @@ function makeTableGrid(opts){
   function downloadPNG(){
     redraw();
     const a = document.createElement("a");
-    a.download = `ogive-${typeof isoStamp === "function" ? isoStamp() : new Date().toISOString().replace(/[:.]/g,'-')}.png`;
+    a.download = `ogive-${(typeof isoStamp === "function" ? isoStamp() : new Date().toISOString().replace(/[:.]/g,'-'))}.png`;
     a.href = cv.toDataURL("image/png");
     a.click();
   }
+
   function downloadSVG(){
     redraw();
     const png = cv.toDataURL("image/png");
@@ -1071,7 +1092,7 @@ function makeTableGrid(opts){
     const blob = new Blob([svg], {type:"image/svg+xml"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.download = `ogive-${typeof isoStamp === "function" ? isoStamp() : new Date().toISOString().replace(/[:.]/g,'-')}.svg`;
+    a.download = `ogive-${(typeof isoStamp === "function" ? isoStamp() : new Date().toISOString().replace(/[:.]/g,'-'))}.svg`;
     a.href = url;
     a.click();
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
@@ -1083,8 +1104,8 @@ function makeTableGrid(opts){
 
   const live = [
     'o_data','o_showDots','o_showPointLabels',
-    'o_showAxisLabels','o_axisLabelArrows',
-    'o_xLabelText','o_yLabelText','o_fontAxisLabel','o_xLabelOffset','o_yLabelOffset',
+    'h_showAxisLabels','h_axisLabelArrows',
+    'h_xLabelText','h_yLabelText','h_fontAxisLabel','h_xLabelOffset','h_yLabelOffset',
     'o_zoom','o_minorPx','o_majorEvery','o_yLabelStep','o_curveW',
     'o_csize','o_origin','o_xSmallPerUnit','o_ySmallPerUnit',
     'o_fontAxis','o_fontTicks','o_fontPoint'
