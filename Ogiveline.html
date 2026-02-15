@@ -113,8 +113,9 @@
           Ogive (Cumulative Frequency Curve)
           <span class="pill">table input • drag points • pan/zoom • FIT</span>
         </h2>
+
         <div class="body">
-        <div class="btns">
+          <div class="btns">
             <button id="o_fitBtn">Fit</button>
             <button class="good" id="o_pngBtn">PNG</button>
             <button class="good" id="o_svgBtn">SVG</button>
@@ -125,11 +126,7 @@
               <div>Ogive — Table Input</div>
               <small>Drag dots to change CF</small>
             </div>
-            <div class="sheetBtns">
-                <button id="o_addRow">+ Row</button>
-                <button id="o_delRow">− Row</button>
-                <button class="good" id="o_useTable">Use Table → Draw</button>
-            </div>
+
             <div class="sheetWrap">
               <table class="paperTable" id="o_table">
                 <thead>
@@ -143,7 +140,11 @@
                 <tbody></tbody>
               </table>
 
-
+              <div class="sheetBtns">
+                <button id="o_addRow">+ Row</button>
+                <button id="o_delRow">− Row</button>
+                <button class="good" id="o_useTable">Use Table → Draw</button>
+              </div>
 
               <div class="sheetHint">
                 ✅ Paste works (tab/newline).<br/>
@@ -151,9 +152,8 @@
               </div>
 
               <textarea id="o_data" style="display:none;">49.5,54.5,1
-                54.5,59.5,3
-                59.5,64.5,6
-            </textarea>
+54.5,59.5,3
+59.5,64.5,6</textarea>
             </div>
           </div>
 
@@ -218,47 +218,47 @@
             </div>
           </div>
 
+          <!-- ===== Axis annotation inputs (FIXED: ogive uses o_... ids) ===== -->
           <div class="section">Axis annotations</div>
 
-<div class="two">
-  <div>
-    <label style="color:var(--muted);font-size:13px;">X-axis label text</label>
-    <input id="h_xLabelText" value="অবিচ্ছিন্ন শ্রেনীসীমা →" />
-  </div>
-  <div>
-    <label style="color:var(--muted);font-size:13px;">Y-axis label text</label>
-    <input id="h_yLabelText" value="ক্রমযোজিত গণসংখ্যা →" />
-  </div>
-</div>
+          <div class="two">
+            <div>
+              <label style="color:var(--muted);font-size:13px;">X-axis label text</label>
+              <input id="o_xLabelText" value="অবিচ্ছিন্ন শ্রেনীসীমা →" />
+            </div>
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Y-axis label text</label>
+              <input id="o_yLabelText" value="ক্রমযোজিত গণসংখ্যা ↑" />
+            </div>
+          </div>
 
-<div class="two">
-  <label style="display:flex;align-items:center;gap:10px;">
-    <input id="h_showAxisLabels" type="checkbox" checked />
-    <span style="color:var(--muted);font-size:13px;">Show axis labels</span>
-  </label>
-  <label style="display:flex;align-items:center;gap:10px;">
-    <input id="h_axisLabelArrows" type="checkbox" checked />
-    <span style="color:var(--muted);font-size:13px;">Include arrow (↑ / →)</span>
-  </label>
-</div>
+          <div class="two">
+            <label style="display:flex;align-items:center;gap:10px;">
+              <input id="o_showAxisLabels" type="checkbox" checked />
+              <span style="color:var(--muted);font-size:13px;">Show axis labels</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;">
+              <input id="o_axisLabelArrows" type="checkbox" checked />
+              <span style="color:var(--muted);font-size:13px;">Include arrow (↑ / →)</span>
+            </label>
+          </div>
 
-<div class="row">
-  <label>Axis label font size</label>
-  <input id="h_fontAxisLabel" type="range" min="10" max="40" value="18" step="1" />
-  <div class="val" id="h_fontAxisLabelVal"></div>
-</div>
+          <div class="row">
+            <label>Axis label font size</label>
+            <input id="o_fontAxisLabel" type="range" min="10" max="40" value="18" step="1" />
+            <div class="val" id="o_fontAxisLabelVal"></div>
+          </div>
 
-<div class="two">
-  <div>
-    <label style="color:var(--muted);font-size:13px;">X label offset (px)</label>
-    <input id="h_xLabelOffset" type="number" value="45" />
-  </div>
-  <div>
-    <label style="color:var(--muted);font-size:13px;">Y label offset (px)</label>
-    <input id="h_yLabelOffset" type="number" value="55" />
-  </div>
-</div>
-
+          <div class="two">
+            <div>
+              <label style="color:var(--muted);font-size:13px;">X label offset (px)</label>
+              <input id="o_xLabelOffset" type="number" value="45" />
+            </div>
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Y label offset (px)</label>
+              <input id="o_yLabelOffset" type="number" value="55" />
+            </div>
+          </div>
 
           <div class="section">Font sizes</div>
           <div class="row">
@@ -276,8 +276,6 @@
             <input id="o_fontPoint" type="range" min="10" max="34" value="12" step="1" />
             <div class="val" id="o_fontPointVal"></div>
           </div>
-
-
 
           <div class="hint">
             Drag a dot to edit cumulative frequency. We auto-enforce: CF is non-decreasing and ≥ 0.
@@ -380,6 +378,7 @@ function makeTableGrid(opts){
     }
   }
 
+  // Paste tab/newline
   table.addEventListener("paste", (e) => {
     const active = document.activeElement;
     if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
@@ -392,7 +391,7 @@ function makeTableGrid(opts){
     const startTd = active.closest("td");
     const startTr = active.closest("tr");
     const r0 = [...tbody.children].indexOf(startTr);
-    const c0 = [...startTr.querySelectorAll("td")].indexOf(startTd) - 1;
+    const c0 = [...startTr.querySelectorAll("td")].indexOf(startTd) - 1; // ignore index col
 
     while(tbody.children.length < r0 + grid.length) addRow();
 
@@ -408,6 +407,7 @@ function makeTableGrid(opts){
     }
   });
 
+  // Enter like Tab
   table.addEventListener("keydown", (e) => {
     const active = document.activeElement;
     if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
@@ -427,13 +427,14 @@ function makeTableGrid(opts){
     hidden.dispatchEvent(new Event("input", {bubbles:true}));
   });
 
+  // init from hidden textarea
   textToTable(hidden.value);
 
   return { textToTable };
 }
 
 /* ============================
-   Ogive App (same logic)
+   Ogive App
 ============================ */
 (() => {
   const oGrid = makeTableGrid({
@@ -453,14 +454,24 @@ function makeTableGrid(opts){
     const s = $(spanId), i = $(inputId);
     if(s && i) s.textContent = i.value;
   }
-function refreshVals(){
-  setVal('h_zoomVal','h_zoom');
-  setVal('h_fontAxisVal','h_fontAxis');
-  setVal('h_fontTicksVal','h_fontTicks');
-  setVal('h_fontMidVal','h_fontMid');
-  setVal('h_fontAxisLabelVal','h_fontAxisLabel');
-}
 
+  function refreshVals(){
+    setVal('o_zoomVal','o_zoom');
+    setVal('o_fontAxisVal','o_fontAxis');
+    setVal('o_fontTicksVal','o_fontTicks');
+    setVal('o_fontPointVal','o_fontPoint');
+    setVal('o_fontAxisLabelVal','o_fontAxisLabel');
+  }
+
+  function parsePair(s){
+    const [a,b] = String(s).split(',').map(t => Number(t.trim()));
+    if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return [a,b];
+  }
+
+  function clamp(v, lo, hi){
+    return Math.max(lo, Math.min(hi, v));
+  }
 
   function parseData(text){
     const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -601,49 +612,39 @@ function refreshVals(){
   }
 
   function drawAxisAnnotations(params){
-  if(!document.getElementById("h_showAxisLabels")?.checked) return;
+    if(!document.getElementById("o_showAxisLabels")?.checked) return;
 
-  const xTextRaw = document.getElementById("h_xLabelText")?.value ?? "";
-  const yTextRaw = document.getElementById("h_yLabelText")?.value ?? "";
-  const addArrows = document.getElementById("h_axisLabelArrows")?.checked;
+    const xTextRaw = document.getElementById("o_xLabelText")?.value ?? "";
+    const yTextRaw = document.getElementById("o_yLabelText")?.value ?? "";
+    const addArrows = document.getElementById("o_axisLabelArrows")?.checked;
 
-  const xOffset = Number(document.getElementById("h_xLabelOffset")?.value ?? 45);
-  const yOffset = Number(document.getElementById("h_yLabelOffset")?.value ?? 55);
+    const xOffset = Number(document.getElementById("o_xLabelOffset")?.value ?? 45);
+    const yOffset = Number(document.getElementById("o_yLabelOffset")?.value ?? 55);
 
-  const size = Number(document.getElementById("h_fontAxisLabel")?.value ?? 18);
+    const size = Number(document.getElementById("o_fontAxisLabel")?.value ?? 18);
 
-  // If user doesn't include arrows, we can add them optionally
-  const xText = addArrows ? xTextRaw : xTextRaw.replace(/[→➡]/g, "").trim();
-  const yText = addArrows ? yTextRaw : yTextRaw.replace(/[↑⬆]/g, "").trim();
+    const xText = addArrows ? xTextRaw : xTextRaw.replace(/[→➡]/g, "").trim();
+    const yText = addArrows ? yTextRaw : yTextRaw.replace(/[↑⬆]/g, "").trim();
 
-  ctx.save();
-  ctx.fillStyle = "#000";
-  ctx.globalAlpha = 0.95;
-  ctx.font = `${size}px system-ui`;
+    ctx.save();
+    ctx.fillStyle = "#000";
+    ctx.globalAlpha = 0.95;
+    ctx.font = `${size}px system-ui`;
 
-  // X label: centered under x-axis
-  // Using the canvas width center tends to look like the image
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(xText, cv.width/2, params.oy + xOffset);
+    // X label
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(xText, cv.width/2, params.oy + xOffset);
 
-  // Y label: rotated 90° counterclockwise (reads bottom-to-top)
-  ctx.translate(params.ox - yOffset, cv.height/2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(yText, 0, 0);
+    // Y label rotated
+    ctx.translate(params.ox - yOffset, cv.height/2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(yText, 0, 0);
 
-  // Optional arrow glyphs (if you want actual arrow symbols even when text has none)
-  // You can remove this block if you only want arrows inside the text.
-  if(addArrows){
-    // X arrow at end (small)
-    ctx.rotate(Math.PI / 2); // undo rotation context changes safely? (we're inside rotated state)
+    ctx.restore();
   }
-
-  ctx.restore();
-}
-
 
   function drawAxisBreakGlyph(params){
     const {ox, oy, minorPx, majorEvery, zoom, breakFrom, breakTo} = params;
@@ -744,7 +745,8 @@ function refreshVals(){
     return pts;
   }
 
-  let pointHit = [];
+  // For dragging: store hitboxes for ONLY "data" points
+  let pointHit = []; // {rowIndex, cx, cy, r}
   const dragState = {active:false, mode:null, rowIndex:-1, startOx:0, startOy:0, startMx:0, startMy:0};
 
   function drawOgiveCurve(points, params, fonts){
@@ -862,11 +864,9 @@ function refreshVals(){
       clear();
       drawGraphPaper(params.ox, params.oy, params.minorPx, params.majorEvery, params.zoom);
 
-
       drawAxes(params.ox, params.oy, fonts);
       drawAxisBreakGlyph(params);
       drawAxisAnnotations(params);
-
 
       const upperBounds = rows.map(r => r.hi);
       const xLabels = [rows[0].lo, ...upperBounds];
@@ -876,12 +876,12 @@ function refreshVals(){
 
       const pts = buildOgivePoints(rows);
       drawOgiveCurve(pts, params, fonts);
-
     }catch(e){
       console.warn(e.message);
     }
   }
 
+  // ====== DRAG POINTS + PAN + ZOOM ======
   function canvasXY(e){
     const r = cv.getBoundingClientRect();
     return {
@@ -946,6 +946,7 @@ function refreshVals(){
         const i = dragState.rowIndex;
         if(i < 0 || i >= rows.length) return;
 
+        // enforce monotonic CF:
         const prev = (i === 0) ? 0 : rows[i-1].cf;
         const next = (i === rows.length-1) ? Infinity : rows[i+1].cf;
 
@@ -967,6 +968,7 @@ function refreshVals(){
       }
     }
 
+    // hover cursor
     const pi = hitTestPoint(mx,my);
     if(pi >= 0){
       setCursor("can-move-point");
@@ -1055,7 +1057,7 @@ function refreshVals(){
   function downloadPNG(){
     redraw();
     const a = document.createElement("a");
-    a.download = `ogive-${isoStamp()}.png`;
+    a.download = `ogive-${typeof isoStamp === "function" ? isoStamp() : new Date().toISOString().replace(/[:.]/g,'-')}.png`;
     a.href = cv.toDataURL("image/png");
     a.click();
   }
@@ -1069,7 +1071,7 @@ function refreshVals(){
     const blob = new Blob([svg], {type:"image/svg+xml"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    a.download = `ogive-${isoStamp()}.svg`;
+    a.download = `ogive-${typeof isoStamp === "function" ? isoStamp() : new Date().toISOString().replace(/[:.]/g,'-')}.svg`;
     a.href = url;
     a.click();
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
@@ -1079,14 +1081,14 @@ function refreshVals(){
   $('o_pngBtn').addEventListener("click", downloadPNG);
   $('o_svgBtn').addEventListener("click", downloadSVG);
 
-const live = [
-  'h_data','h_showHist','h_showPoly','h_showMidDots','h_showMidLabels',
-  'h_showAxisLabels','h_axisLabelArrows',
-  'h_xLabelText','h_yLabelText','h_fontAxisLabel','h_xLabelOffset','h_yLabelOffset',
-  'h_zoom','h_minorPx','h_majorEvery','h_barAlpha',
-  'h_yLabelStep','h_csize','h_origin','h_xSmallPerUnit','h_ySmallPerUnit',
-  'h_fontAxis','h_fontTicks','h_fontMid'
-];
+  const live = [
+    'o_data','o_showDots','o_showPointLabels',
+    'o_showAxisLabels','o_axisLabelArrows',
+    'o_xLabelText','o_yLabelText','o_fontAxisLabel','o_xLabelOffset','o_yLabelOffset',
+    'o_zoom','o_minorPx','o_majorEvery','o_yLabelStep','o_curveW',
+    'o_csize','o_origin','o_xSmallPerUnit','o_ySmallPerUnit',
+    'o_fontAxis','o_fontTicks','o_fontPoint'
+  ];
 
   live.forEach(id => {
     const el = $(id);
