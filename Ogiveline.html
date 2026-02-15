@@ -218,6 +218,48 @@
             </div>
           </div>
 
+          <div class="section">Axis annotations</div>
+
+<div class="two">
+  <div>
+    <label style="color:var(--muted);font-size:13px;">X-axis label text</label>
+    <input id="h_xLabelText" value="অক্ষরেখা শ্রেণিবাচী →" />
+  </div>
+  <div>
+    <label style="color:var(--muted);font-size:13px;">Y-axis label text</label>
+    <input id="h_yLabelText" value="ক্রমবর্ধমান সংখ্যা →" />
+  </div>
+</div>
+
+<div class="two">
+  <label style="display:flex;align-items:center;gap:10px;">
+    <input id="h_showAxisLabels" type="checkbox" checked />
+    <span style="color:var(--muted);font-size:13px;">Show axis labels</span>
+  </label>
+  <label style="display:flex;align-items:center;gap:10px;">
+    <input id="h_axisLabelArrows" type="checkbox" checked />
+    <span style="color:var(--muted);font-size:13px;">Include arrow (↑ / →)</span>
+  </label>
+</div>
+
+<div class="row">
+  <label>Axis label font size</label>
+  <input id="h_fontAxisLabel" type="range" min="10" max="40" value="18" step="1" />
+  <div class="val" id="h_fontAxisLabelVal"></div>
+</div>
+
+<div class="two">
+  <div>
+    <label style="color:var(--muted);font-size:13px;">X label offset (px)</label>
+    <input id="h_xLabelOffset" type="number" value="45" />
+  </div>
+  <div>
+    <label style="color:var(--muted);font-size:13px;">Y label offset (px)</label>
+    <input id="h_yLabelOffset" type="number" value="55" />
+  </div>
+</div>
+
+
           <div class="section">Font sizes</div>
           <div class="row">
             <label>Axis letters (X,Y,O)</label>
@@ -411,12 +453,14 @@ function makeTableGrid(opts){
     const s = $(spanId), i = $(inputId);
     if(s && i) s.textContent = i.value;
   }
-  function refreshVals(){
-    setVal('o_zoomVal','o_zoom');
-    setVal('o_fontAxisVal','o_fontAxis');
-    setVal('o_fontTicksVal','o_fontTicks');
-    setVal('o_fontPointVal','o_fontPoint');
-  }
+function refreshVals(){
+  setVal('h_zoomVal','h_zoom');
+  setVal('h_fontAxisVal','h_fontAxis');
+  setVal('h_fontTicksVal','h_fontTicks');
+  setVal('h_fontMidVal','h_fontMid');
+  setVal('h_fontAxisLabelVal','h_fontAxisLabel');
+}
+
 
   function parseData(text){
     const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
@@ -555,6 +599,51 @@ function makeTableGrid(opts){
 
     ctx.restore();
   }
+
+  function drawAxisAnnotations(params){
+  if(!document.getElementById("h_showAxisLabels")?.checked) return;
+
+  const xTextRaw = document.getElementById("h_xLabelText")?.value ?? "";
+  const yTextRaw = document.getElementById("h_yLabelText")?.value ?? "";
+  const addArrows = document.getElementById("h_axisLabelArrows")?.checked;
+
+  const xOffset = Number(document.getElementById("h_xLabelOffset")?.value ?? 45);
+  const yOffset = Number(document.getElementById("h_yLabelOffset")?.value ?? 55);
+
+  const size = Number(document.getElementById("h_fontAxisLabel")?.value ?? 18);
+
+  // If user doesn't include arrows, we can add them optionally
+  const xText = addArrows ? xTextRaw : xTextRaw.replace(/[→➡]/g, "").trim();
+  const yText = addArrows ? yTextRaw : yTextRaw.replace(/[↑⬆]/g, "").trim();
+
+  ctx.save();
+  ctx.fillStyle = "#000";
+  ctx.globalAlpha = 0.95;
+  ctx.font = `${size}px system-ui`;
+
+  // X label: centered under x-axis
+  // Using the canvas width center tends to look like the image
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(xText, cv.width/2, params.oy + xOffset);
+
+  // Y label: rotated 90° counterclockwise (reads bottom-to-top)
+  ctx.translate(params.ox - yOffset, cv.height/2);
+  ctx.rotate(-Math.PI / 2);
+  ctx.textAlign = "center";
+  ctx.textBaseline = "top";
+  ctx.fillText(yText, 0, 0);
+
+  // Optional arrow glyphs (if you want actual arrow symbols even when text has none)
+  // You can remove this block if you only want arrows inside the text.
+  if(addArrows){
+    // X arrow at end (small)
+    ctx.rotate(Math.PI / 2); // undo rotation context changes safely? (we're inside rotated state)
+  }
+
+  ctx.restore();
+}
+
 
   function drawAxisBreakGlyph(params){
     const {ox, oy, minorPx, majorEvery, zoom, breakFrom, breakTo} = params;
@@ -772,8 +861,12 @@ function makeTableGrid(opts){
 
       clear();
       drawGraphPaper(params.ox, params.oy, params.minorPx, params.majorEvery, params.zoom);
+
+
       drawAxes(params.ox, params.oy, fonts);
       drawAxisBreakGlyph(params);
+      drawAxisAnnotations(params);
+
 
       const upperBounds = rows.map(r => r.hi);
       const xLabels = [rows[0].lo, ...upperBounds];
@@ -986,12 +1079,15 @@ function makeTableGrid(opts){
   $('o_pngBtn').addEventListener("click", downloadPNG);
   $('o_svgBtn').addEventListener("click", downloadSVG);
 
-  const live = [
-    'o_data','o_showDots','o_showPointLabels',
-    'o_zoom','o_minorPx','o_majorEvery','o_yLabelStep','o_curveW',
-    'o_csize','o_origin','o_xSmallPerUnit','o_ySmallPerUnit',
-    'o_fontAxis','o_fontTicks','o_fontPoint'
-  ];
+const live = [
+  'h_data','h_showHist','h_showPoly','h_showMidDots','h_showMidLabels',
+  'h_showAxisLabels','h_axisLabelArrows',
+  'h_xLabelText','h_yLabelText','h_fontAxisLabel','h_xLabelOffset','h_yLabelOffset',
+  'h_zoom','h_minorPx','h_majorEvery','h_barAlpha',
+  'h_yLabelStep','h_csize','h_origin','h_xSmallPerUnit','h_ySmallPerUnit',
+  'h_fontAxis','h_fontTicks','h_fontMid'
+];
+
   live.forEach(id => {
     const el = $(id);
     if(el) el.addEventListener("input", ()=>{ refreshVals(); redraw(); });
