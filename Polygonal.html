@@ -1,0 +1,1092 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Graph Paper Suite — Histogram + Polygon (Table Inputs + Pan/Zoom)</title>
+
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111a33;
+      --text:#e9eefc;
+      --muted:#9fb0e6;
+      --stroke:rgba(255,255,255,0.10);
+      --card:rgba(17,26,51,0.88);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#070b16,#0b1020);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background:rgba(7,11,22,0.55);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+    .topbarInner{
+      width:min(1400px,96vw);
+      margin:0 auto;
+      padding:12px 0;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+      font-weight:800; letter-spacing:.2px;
+    }
+    .brand span{
+      display:inline-block;
+      padding:6px 10px;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:999px;
+      background:rgba(255,255,255,0.06);
+      font-size:12px;
+      color:var(--muted);
+      font-weight:650;
+    }
+
+    .page{
+      width:min(1400px,96vw);
+      margin:0 auto;
+      padding:18px 0 28px;
+    }
+    .wrap{
+      width:100%;
+      display:grid;
+      grid-template-columns: 560px 1fr;
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width: 1100px){
+      .wrap{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow:0 20px 55px rgba(0,0,0,0.45);
+      overflow:hidden;
+    }
+    .card h2{
+      margin:0; padding:14px 16px; font-size:16px;
+      border-bottom:1px solid var(--stroke);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .pill{
+      font-size:12px; color:var(--muted);
+      border:1px solid rgba(255,255,255,0.12);
+      padding:6px 10px; border-radius:999px;
+      background:rgba(0,0,0,0.18);
+      white-space:nowrap;
+    }
+    .body{ padding:14px 16px; }
+
+    textarea,input,select{
+      width:100%;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.12);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{ resize:vertical; }
+
+    .row{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .row label{ flex:1; color:var(--muted); font-size:13px; }
+    .row input[type="range"]{ width:220px; }
+    .row .val{ width:72px; text-align:right; font-size:13px; opacity:.95; }
+
+    .two{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
+
+    .btns{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    button{
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.08);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+    }
+    button:hover{ background:rgba(255,255,255,0.12); }
+    button.good{
+      background:rgba(61,220,151,0.14);
+      border-color:rgba(61,220,151,0.35);
+    }
+
+    .hint{ margin-top:10px; color:var(--muted); font-size:13px; line-height:1.35; }
+    .section{
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid rgba(255,255,255,0.08);
+      color:#cfe1ff;
+      font-size:13px;
+      letter-spacing:.2px;
+    }
+
+    .canvasWrap{ padding:12px; }
+    canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      background:#fff;
+      border-radius:14px;
+    }
+    .small{ font-size:12px; color:var(--muted); margin-top:8px; }
+
+    canvas.can-grab{ cursor: grab; }
+    canvas.grabbing{ cursor: grabbing; }
+
+    /* ======= Paper table (cell inputs) ======= */
+    .tableCard{
+      margin-top:12px;
+      background:rgba(17,26,51,0.88);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 20px 55px rgba(0,0,0,0.45);
+    }
+    .sheetTitle{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      display:flex; gap:10px; justify-content:space-between; align-items:center;
+      font-weight:800;
+    }
+    .sheetTitle small{ font-weight:650; color:rgba(255,255,255,0.70); }
+    .sheetWrap{ padding:12px 14px; }
+
+    .paperTable{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      table-layout:fixed;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:14px;
+      overflow:hidden;
+      background:rgba(0,0,0,0.18);
+    }
+    .paperTable thead th{
+      font-size:12px;
+      color:rgba(255,255,255,0.78);
+      background:rgba(255,255,255,0.06);
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      padding:10px 8px;
+      text-align:center;
+      font-weight:800;
+    }
+    .paperTable tbody td{
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      border-right:1px solid rgba(255,255,255,0.08);
+      padding:0;
+    }
+    .paperTable tbody tr:last-child td{ border-bottom:none; }
+    .paperTable tbody td:last-child{ border-right:none; }
+
+    .rowIndex{
+      width:44px;
+      text-align:center;
+      color:rgba(255,255,255,0.65);
+      font-size:12px;
+      font-weight:800;
+      background:rgba(255,255,255,0.04);
+    }
+    .cellInput{
+      width:100%;
+      padding:10px 8px;
+      border:0;
+      outline:none;
+      background:transparent;
+      color:#e9eefc;
+      font-size:14px;
+      font-weight:650;
+      text-align:center;
+    }
+    .cellInput:focus{
+      background:rgba(61,220,151,0.10);
+      box-shadow: inset 0 0 0 2px rgba(61,220,151,0.35);
+    }
+    .sheetBtns{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .sheetHint{
+      margin-top:8px;
+      color:rgba(255,255,255,0.70);
+      font-size:12px;
+      line-height:1.35;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbarInner">
+      <div class="brand">
+        Graph Paper Suite
+        <span>paper tables • pan/zoom • fit • export</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <section id="app-hist">
+      <div class="wrap">
+        <div class="card">
+          <h2>
+            Textbook Histogram + Polygon
+            <span class="pill">table input • break • pan/zoom • FIT • export</span>
+          </h2>
+          <div class="body">
+
+            <!-- TABLE INPUT -->
+            <div class="tableCard">
+              <div class="sheetTitle">
+                <div>Histogram/Polygon — Table Input</div>
+                <small>Paste from Excel/Sheets</small>
+              </div>
+              <div class="sheetWrap">
+                <table class="paperTable" id="h_table">
+                  <thead>
+                    <tr>
+                      <th class="rowIndex">#</th>
+                      <th>Lower Boundary</th>
+                      <th>Upper Boundary</th>
+                      <th>Frequency</th>
+                    </tr>
+                  </thead>
+                  <tbody></tbody>
+                </table>
+
+                <div class="sheetBtns">
+                  <button id="h_addRow">+ Row</button>
+                  <button id="h_delRow">− Row</button>
+                  <button class="good" id="h_useTable">Use Table → Draw</button>
+                </div>
+
+                <div class="sheetHint">
+                  ✅ Paste works (tab/newline). Click first cell then paste.<br/>
+                  ✅ Internally we still generate <code>lo,hi,f</code> into the hidden textarea.
+                </div>
+
+                <!-- Hidden textarea: your engine reads this -->
+                <textarea id="h_data" style="display:none;">44.5,49.5,4
+49.5,54.5,8
+54.5,59.5,10
+59.5,64.5,20
+64.5,69.5,12
+69.5,74.5,6</textarea>
+              </div>
+            </div>
+
+            <div class="two">
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showHist" type="checkbox" checked />
+                <span style="color:var(--muted);font-size:13px;">Histogram</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showPoly" type="checkbox" checked />
+                <span style="color:var(--muted);font-size:13px;">Frequency polygon</span>
+              </label>
+            </div>
+
+            <div class="two">
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showMidDots" type="checkbox" checked />
+                <span style="color:var(--muted);font-size:13px;">Midpoint dots</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showMidLabels" type="checkbox" />
+                <span style="color:var(--muted);font-size:13px;">Midpoint labels</span>
+              </label>
+            </div>
+
+            <div class="row">
+              <label>Zoom</label>
+              <input id="h_zoom" type="range" min="0.35" max="4.0" value="1.00" step="0.05" />
+              <div class="val" id="h_zoomVal"></div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
+                <input id="h_minorPx" type="number" value="10" min="4" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Major every (squares)</label>
+                <input id="h_majorEvery" type="number" value="5" min="2" step="1" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Y labels step</label>
+                <input id="h_yLabelStep" type="number" value="5" min="1" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Bar opacity</label>
+                <input id="h_barAlpha" type="number" value="0.18" min="0" max="1" step="0.05" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Canvas (w,h)</label>
+                <input id="h_csize" value="980,600" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
+                <input id="h_origin" value="170,500" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">X: squares per 1 unit</label>
+                <input id="h_xSmallPerUnit" type="number" value="1" min="1" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Y: squares per 1 unit</label>
+                <input id="h_ySmallPerUnit" type="number" value="1" min="1" step="1" />
+              </div>
+            </div>
+
+            <div class="section">Font sizes</div>
+            <div class="row">
+              <label>Axis letters (X,Y,O)</label>
+              <input id="h_fontAxis" type="range" min="10" max="40" value="16" step="1" />
+              <div class="val" id="h_fontAxisVal"></div>
+            </div>
+            <div class="row">
+              <label>Tick labels (numbers)</label>
+              <input id="h_fontTicks" type="range" min="10" max="34" value="14" step="1" />
+              <div class="val" id="h_fontTicksVal"></div>
+            </div>
+            <div class="row">
+              <label>Midpoint labels</label>
+              <input id="h_fontMid" type="range" min="10" max="34" value="12" step="1" />
+              <div class="val" id="h_fontMidVal"></div>
+            </div>
+
+            <div class="btns">
+              <button id="h_fitBtn">Fit</button>
+              <button class="good" id="h_pngBtn">PNG</button>
+              <button class="good" id="h_svgBtn">SVG</button>
+            </div>
+
+            <div class="hint">
+              X-axis ticks show <b>only boundaries</b>. Axis break uses <b>/\\/\\</b> and a fixed <b>5-square gap</b>.
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Graph <span class="pill">textbook axis break</span></h2>
+          <div class="canvasWrap">
+            <canvas id="h_cv" width="980" height="600"></canvas>
+            <div class="small">Pan by dragging. Zoom with wheel (zooms to cursor).</div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+<script>
+/* ============================
+   Shared: Table Grid Builder
+============================ */
+function makeTableGrid(opts){
+  const {
+    tableId, textareaId,
+    addBtnId, delBtnId, useBtnId,
+    columnsCount = 3
+  } = opts;
+
+  const table = document.getElementById(tableId);
+  const tbody = table.querySelector("tbody");
+  const hidden = document.getElementById(textareaId);
+
+  const btnAdd = document.getElementById(addBtnId);
+  const btnDel = document.getElementById(delBtnId);
+  const btnUse = document.getElementById(useBtnId);
+
+  function makeCellInput(value=""){
+    const inp = document.createElement("input");
+    inp.className = "cellInput";
+    inp.value = value;
+    inp.inputMode = "decimal";
+    inp.autocomplete = "off";
+    inp.spellcheck = false;
+    return inp;
+  }
+
+  function renumber(){
+    [...tbody.querySelectorAll("tr")].forEach((tr,i)=>{
+      tr.querySelector(".rowIndex").textContent = String(i+1);
+    });
+  }
+
+  function addRow(values){
+    const tr = document.createElement("tr");
+
+    const idx = document.createElement("td");
+    idx.className = "rowIndex";
+    idx.textContent = String(tbody.children.length + 1);
+    tr.appendChild(idx);
+
+    for(let c=0;c<columnsCount;c++){
+      const td = document.createElement("td");
+      const inp = makeCellInput((values && values[c]) ? values[c] : "");
+      td.appendChild(inp);
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+    renumber();
+  }
+
+  function delRow(){
+    if(tbody.children.length > 1) tbody.removeChild(tbody.lastElementChild);
+    renumber();
+  }
+
+  function tableToText(){
+    const lines = [];
+    for(const tr of [...tbody.querySelectorAll("tr")]){
+      const inputs = [...tr.querySelectorAll("input.cellInput")];
+      const vals = inputs.map(i => i.value.trim());
+      const allEmpty = vals.every(v => !v);
+      if(allEmpty) continue;
+      lines.push(vals.join(","));
+    }
+    return lines.join("\n");
+  }
+
+  function textToTable(text){
+    tbody.innerHTML = "";
+    const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    if(lines.length === 0){
+      addRow();
+      return;
+    }
+    for(const line of lines){
+      const parts = line.split(",").map(s=>s.trim());
+      addRow(parts.slice(0, columnsCount));
+    }
+  }
+
+  table.addEventListener("paste", (e) => {
+    const active = document.activeElement;
+    if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
+    e.preventDefault();
+
+    const text = (e.clipboardData || window.clipboardData).getData("text");
+    const rows = text.split(/\r?\n/).filter(r=>r.length);
+    const grid = rows.map(r => r.split("\t"));
+
+    const startTd = active.closest("td");
+    const startTr = active.closest("tr");
+    const r0 = [...tbody.children].indexOf(startTr);
+    const c0 = [...startTr.querySelectorAll("td")].indexOf(startTd) - 1;
+
+    while(tbody.children.length < r0 + grid.length) addRow();
+
+    for(let r=0;r<grid.length;r++){
+      const tr = tbody.children[r0 + r];
+      const ins = [...tr.querySelectorAll("input.cellInput")];
+      for(let c=0;c<grid[r].length;c++){
+        const cc = c0 + c;
+        if(cc >= 0 && cc < columnsCount){
+          ins[cc].value = grid[r][c].trim();
+        }
+      }
+    }
+  });
+
+  table.addEventListener("keydown", (e) => {
+    const active = document.activeElement;
+    if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
+    if(e.key === "Enter"){
+      e.preventDefault();
+      const all = [...table.querySelectorAll("input.cellInput")];
+      const i = all.indexOf(active);
+      if(i >= 0 && i < all.length-1) all[i+1].focus();
+    }
+  });
+
+  btnAdd?.addEventListener("click", () => addRow());
+  btnDel?.addEventListener("click", () => delRow());
+
+  btnUse?.addEventListener("click", () => {
+    hidden.value = tableToText();
+    hidden.dispatchEvent(new Event("input", {bubbles:true}));
+  });
+
+  textToTable(hidden.value);
+
+  return { textToTable };
+}
+
+/* ============================
+   APP: Histogram + Polygon
+============================ */
+(() => {
+  makeTableGrid({
+    tableId:"h_table",
+    textareaId:"h_data",
+    addBtnId:"h_addRow",
+    delBtnId:"h_delRow",
+    useBtnId:"h_useTable",
+    columnsCount: 3
+  });
+
+  const cv = document.getElementById('h_cv');
+  const ctx = cv.getContext('2d');
+  const $ = (id) => document.getElementById(id);
+
+  function setVal(spanId, inputId){
+    const s = $(spanId), i = $(inputId);
+    if(s && i) s.textContent = i.value;
+  }
+  function refreshVals(){
+    setVal('h_zoomVal','h_zoom');
+    setVal('h_fontAxisVal','h_fontAxis');
+    setVal('h_fontTicksVal','h_fontTicks');
+    setVal('h_fontMidVal','h_fontMid');
+  }
+
+  function parsePair(s){
+    const [a,b] = s.split(',').map(t => Number(t.trim()));
+    if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return [a,b];
+  }
+
+  function parseData(text){
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const rows = [];
+    for(const line of lines){
+      const parts = line.split(',').map(s => s.trim());
+      if(parts.length < 3) throw new Error("Bad line: " + line);
+      const lo = Number(parts[0]), hi = Number(parts[1]), f = Number(parts[2]);
+      if(!Number.isFinite(lo) || !Number.isFinite(hi) || !Number.isFinite(f)) throw new Error("Bad numbers: " + line);
+      if(hi <= lo) throw new Error("Upper boundary must be > lower boundary: " + line);
+      rows.push({lo, hi, f, mid:(lo+hi)/2});
+    }
+    rows.sort((a,b)=>a.lo-b.lo);
+    return rows;
+  }
+
+  function applyCanvasSize(){
+    const s = parsePair($('h_csize').value);
+    if(!s) throw new Error("Canvas size format: w,h");
+    const [w,h] = s;
+    cv.width = Math.floor(w);
+    cv.height = Math.floor(h);
+  }
+
+  function xMapWithBreak(x, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx){
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    if(!(breakTo > breakFrom)) return ox + x*sx;
+    if(x <= breakFrom) return ox + x*sx;
+    const removed = (breakTo - breakFrom);
+    const xCompressed = x - removed;
+    return ox + xCompressed*sx + breakGapPx;
+  }
+
+  function xUnmapWithBreak(px, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx){
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    if(!(breakTo > breakFrom)) return (px-ox)/sx;
+
+    const breakFromPx = ox + breakFrom*sx;
+    const afterGapStartPx = breakFromPx + breakGapPx;
+
+    if(px <= breakFromPx) return (px-ox)/sx;
+    if(px < afterGapStartPx) return breakFrom;
+
+    const removed = (breakTo - breakFrom);
+    const xCompressed = (px - ox - breakGapPx)/sx;
+    return xCompressed + removed;
+  }
+
+  function worldToCanvas(x,y, params){
+    const {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom, breakFrom, breakTo, breakGapPx} = params;
+    const mp = minorPx * zoom;
+    const sy = mp * ySmallPerUnit;
+    const px = xMapWithBreak(x, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx);
+    const py = oy - y*sy;
+    return [px, py];
+  }
+
+  function canvasToWorld(px,py, params){
+    const {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom, breakFrom, breakTo, breakGapPx} = params;
+    const mp = minorPx * zoom;
+    const sy = mp * ySmallPerUnit;
+    const x = xUnmapWithBreak(px, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx);
+    const y = (oy - py)/sy;
+    return [x,y];
+  }
+
+  function clear(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,cv.width,cv.height);
+  }
+
+  function drawGraphPaper(ox,oy, minorPx, majorEvery, zoom){
+    const mp = minorPx * zoom;
+    const majorPx = mp * majorEvery;
+
+    ctx.save();
+    ctx.strokeStyle="#000";
+
+    ctx.globalAlpha=0.12; ctx.lineWidth=1;
+    for(let x=ox; x<=cv.width; x+=mp){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let x=ox; x>=0; x-=mp){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let y=oy; y<=cv.height; y+=mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+    for(let y=oy; y>=0; y-=mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+
+    ctx.globalAlpha=0.35; ctx.lineWidth=1.5;
+    for(let x=ox; x<=cv.width; x+=majorPx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let x=ox; x>=0; x-=majorPx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let y=oy; y<=cv.height; y+=majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+    for(let y=oy; y>=0; y-=majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+
+    ctx.restore();
+  }
+
+  function arrowhead(x1,y1,x2,y2,size=10){
+    const ang = Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2 - size*Math.cos(ang - Math.PI/7), y2 - size*Math.sin(ang - Math.PI/7));
+    ctx.lineTo(x2 - size*Math.cos(ang + Math.PI/7), y2 - size*Math.sin(ang + Math.PI/7));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function readFonts(){
+    return {
+      axis: Number($('h_fontAxis')?.value ?? 16),
+      ticks: Number($('h_fontTicks')?.value ?? 14),
+      mid: Number($('h_fontMid')?.value ?? 12),
+    };
+  }
+
+  function drawAxes(ox,oy, fonts){
+    ctx.save();
+    ctx.strokeStyle="#000";
+    ctx.fillStyle="#000";
+    ctx.globalAlpha=0.95;
+    ctx.lineWidth=2;
+
+    ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(cv.width,oy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox,cv.height); ctx.lineTo(ox,0); ctx.stroke();
+
+    arrowhead(0,oy,cv.width,oy,10);
+    arrowhead(ox,cv.height,ox,0,10);
+
+    ctx.font = `${fonts.axis}px system-ui`;
+    ctx.fillText("X", cv.width-18, oy+18);
+    ctx.fillText("Y", ox+10, 16);
+    ctx.fillText("O", ox+6, oy-6);
+
+    ctx.restore();
+  }
+
+  function drawAxisBreakGlyph(params){
+    const {ox, oy, minorPx, majorEvery, zoom, breakFrom, breakTo} = params;
+    if(!(breakTo > breakFrom)) return;
+
+    const gapPx = majorEvery * minorPx * zoom;
+    const cx = ox + gapPx * 0.5;
+    const y = oy;
+
+    const amp = 10;
+    const step = 12;
+
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.95;
+
+    ctx.beginPath();
+    ctx.moveTo(cx - step, y - amp);
+    ctx.lineTo(cx - step/2, y + amp);
+    ctx.lineTo(cx, y - amp);
+    ctx.lineTo(cx + step/2, y + amp);
+    ctx.lineTo(cx + step, y - amp);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function computeBounds(rows){
+    const minX = Math.min(...rows.map(r => r.lo));
+    const maxX = Math.max(...rows.map(r => r.hi));
+    const maxY = Math.max(...rows.map(r => r.f), 1);
+    return {minX,maxX,maxY};
+  }
+
+  function drawYAxisLabels(params, yMax, fonts){
+    const {ox,oy, minorPx, ySmallPerUnit, zoom} = params;
+    const mp = minorPx * zoom;
+    const sy = mp * ySmallPerUnit;
+    const step = Math.max(1, Number($('h_yLabelStep')?.value ?? 5));
+
+    ctx.save();
+    ctx.fillStyle="#000";
+    ctx.strokeStyle="#000";
+    ctx.font = `${fonts.ticks}px system-ui`;
+    ctx.globalAlpha=0.95;
+
+    for(let y=0; y<=yMax; y+=step){
+      const py = oy - y*sy;
+      ctx.beginPath();
+      ctx.moveTo(ox-5, py);
+      ctx.lineTo(ox+5, py);
+      ctx.stroke();
+
+      if(y !== 0){
+        ctx.textAlign="right";
+        ctx.textBaseline="middle";
+        ctx.fillText(String(y), ox-8, py);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawXBoundaryLabels(params, boundaries, fonts){
+    const {oy} = params;
+
+    ctx.save();
+    ctx.fillStyle="#000";
+    ctx.strokeStyle="#000";
+    ctx.font = `${fonts.ticks}px system-ui`;
+    ctx.globalAlpha=0.95;
+
+    const tickLen = 6;
+
+    for(const b of boundaries){
+      const [px] = worldToCanvas(b, 0, params);
+      ctx.beginPath();
+      ctx.moveTo(px, oy - tickLen);
+      ctx.lineTo(px, oy + tickLen);
+      ctx.stroke();
+
+      ctx.textAlign="center";
+      ctx.textBaseline="top";
+      ctx.fillText(String(b), px, oy + 10);
+    }
+    ctx.restore();
+  }
+
+  function drawHistogram(rows, params){
+    const alpha = Math.max(0, Math.min(1, Number($('h_barAlpha')?.value ?? 0.18)));
+    ctx.save();
+    ctx.fillStyle = "#000";
+
+    for(const r of rows){
+      const [x1,y0] = worldToCanvas(r.lo, 0, params);
+      const [x2,yf] = worldToCanvas(r.hi, r.f, params);
+
+      const left = Math.min(x1,x2);
+      const right = Math.max(x1,x2);
+      const top = Math.min(y0,yf);
+      const bottom = Math.max(y0,yf);
+
+      ctx.globalAlpha = alpha;
+      ctx.fillRect(left, top, right-left, bottom-top);
+    }
+
+    ctx.globalAlpha = 0.45;
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 1;
+
+    for(const r of rows){
+      const [x1,y0] = worldToCanvas(r.lo, 0, params);
+      const [x2,yf] = worldToCanvas(r.hi, r.f, params);
+
+      const left = Math.min(x1,x2);
+      const right = Math.max(x1,x2);
+      const top = Math.min(y0,yf);
+      const bottom = Math.max(y0,yf);
+
+      ctx.strokeRect(left, top, right-left, bottom-top);
+    }
+
+    ctx.restore();
+  }
+
+  function drawFrequencyPolygon(rows, params, fonts){
+    if(!rows.length) return;
+
+    const mids = rows.map(r => ({x:r.mid, y:r.f}));
+    const start = {x: rows[0].lo, y:0};
+    const end   = {x: rows[rows.length-1].hi, y:0};
+
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.globalAlpha = 1;
+
+    ctx.lineWidth = 4;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+
+    ctx.beginPath();
+    const [sx,sy] = worldToCanvas(start.x,start.y, params);
+    ctx.moveTo(sx,sy);
+
+    for(const p of mids){
+      const [px,py] = worldToCanvas(p.x,p.y, params);
+      ctx.lineTo(px,py);
+    }
+
+    const [ex,ey] = worldToCanvas(end.x,end.y, params);
+    ctx.lineTo(ex,ey);
+    ctx.stroke();
+
+    if($('h_showMidDots')?.checked){
+      ctx.fillStyle="#000";
+      for(const p of mids){
+        const [px,py] = worldToCanvas(p.x,p.y, params);
+        ctx.beginPath();
+        ctx.arc(px,py,4,0,Math.PI*2);
+        ctx.fill();
+      }
+    }
+
+    if($('h_showMidLabels')?.checked){
+      ctx.fillStyle="#000";
+      ctx.font = `${fonts.mid}px system-ui`;
+      ctx.textAlign="center";
+      ctx.textBaseline="bottom";
+      for(const p of mids){
+        const [px,py] = worldToCanvas(p.x,p.y, params);
+        ctx.fillText(String(p.x), px, py-8);
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function fitToData(){
+    const rows = parseData($('h_data').value);
+    applyCanvasSize();
+
+    const minorPx = Number($('h_minorPx').value);
+    const xSmallPerUnit = Number($('h_xSmallPerUnit').value);
+    const ySmallPerUnit = Number($('h_ySmallPerUnit').value);
+
+    const {minX,maxX,maxY} = computeBounds(rows);
+
+    const pad = 70;
+    const baseSx = minorPx * xSmallPerUnit;
+    const baseSy = minorPx * ySmallPerUnit;
+
+    const needZx = (cv.width - 2*pad) / ((maxX - minX) * baseSx);
+    const needZy = (cv.height - 2*pad) / ((maxY - 0) * baseSy);
+    let z = Math.min(needZx, needZy);
+    z = Math.max(0.35, Math.min(4.0, z));
+    $('h_zoom').value = (Math.floor(z*100)/100).toFixed(2);
+
+    const oy = cv.height - pad;
+    const ox = pad;
+    $('h_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
+    refreshVals();
+    redraw();
+  }
+
+  function redraw(){
+    try{
+      applyCanvasSize();
+      const rows = parseData($('h_data').value);
+
+      const origin = parsePair($('h_origin').value);
+      if(!origin) throw new Error("Origin format: ox,oy");
+      const [ox,oy] = origin;
+
+      const fonts = readFonts();
+
+      const minorPx = Number($('h_minorPx').value);
+      const majorEvery = Number($('h_majorEvery').value);
+      const zoom = Number($('h_zoom').value);
+
+      const minBoundary = Math.min(...rows.map(r => r.lo));
+      const breakFrom = 0;
+      const breakTo = minBoundary;
+      const breakGapPx = majorEvery * minorPx * zoom;
+
+      const params = {
+        ox,oy,
+        minorPx,
+        majorEvery,
+        xSmallPerUnit: Number($('h_xSmallPerUnit').value),
+        ySmallPerUnit: Number($('h_ySmallPerUnit').value),
+        zoom,
+        breakFrom,
+        breakTo,
+        breakGapPx,
+      };
+
+      const {maxY} = computeBounds(rows);
+
+      clear();
+      drawGraphPaper(params.ox, params.oy, params.minorPx, params.majorEvery, params.zoom);
+      drawAxes(params.ox, params.oy, fonts);
+      drawAxisBreakGlyph(params);
+
+      const boundaries = [];
+      for(const r of rows) boundaries.push(r.lo);
+      boundaries.push(rows[rows.length-1].hi);
+      const uniq = [...new Set(boundaries)].sort((a,b)=>a-b);
+      drawXBoundaryLabels(params, uniq, fonts);
+
+      drawYAxisLabels(params, maxY, fonts);
+
+      if($('h_showHist')?.checked) drawHistogram(rows, params);
+      if($('h_showPoly')?.checked) drawFrequencyPolygon(rows, params, fonts);
+
+    }catch(e){
+      console.warn(e.message);
+    }
+  }
+
+  function canvasXY(e){
+    const r = cv.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) * (cv.width / r.width),
+      y: (e.clientY - r.top) * (cv.height / r.height),
+    };
+  }
+  function setCursor(mode){
+    cv.classList.remove("can-grab","grabbing");
+    if(mode) cv.classList.add(mode);
+  }
+  let drag = {active:false, sx:0, sy:0, startOx:0, startOy:0};
+
+  cv.addEventListener("mousedown",(e)=>{
+    const p = canvasXY(e);
+    const origin = parsePair($('h_origin').value);
+    if(!origin) return;
+    drag.active=true;
+    drag.sx=p.x; drag.sy=p.y;
+    drag.startOx=origin[0];
+    drag.startOy=origin[1];
+    setCursor("grabbing");
+  });
+  window.addEventListener("mouseup",()=>{ drag.active=false; setCursor("can-grab"); });
+
+  cv.addEventListener("mousemove",(e)=>{
+    if(!drag.active){ setCursor("can-grab"); return; }
+    const p=canvasXY(e);
+    $('h_origin').value = `${Math.round(drag.startOx + (p.x-drag.sx))},${Math.round(drag.startOy + (p.y-drag.sy))}`;
+    redraw();
+  });
+
+  cv.addEventListener("wheel",(e)=>{
+    e.preventDefault();
+    const {x:mx,y:my} = canvasXY(e);
+
+    const origin = parsePair($('h_origin').value);
+    if(!origin) return;
+    let [ox,oy]=origin;
+
+    const minorPx = Number($('h_minorPx').value);
+    const majorEvery = Number($('h_majorEvery').value);
+    const xSmallPerUnit = Number($('h_xSmallPerUnit').value);
+    const ySmallPerUnit = Number($('h_ySmallPerUnit').value);
+
+    const rows = parseData($('h_data').value);
+    const minBoundary = Math.min(...rows.map(r => r.lo));
+
+    const oldZ = Number($('h_zoom').value);
+    const factor = (e.deltaY > 0) ? 0.92 : 1.08;
+    let newZ = Math.max(0.35, Math.min(4.0, oldZ*factor));
+
+    const breakFrom = 0;
+    const breakTo = minBoundary;
+    const oldGapPx = majorEvery * minorPx * oldZ;
+    const newGapPx = majorEvery * minorPx * newZ;
+
+    const paramsOld = {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom: oldZ, breakFrom, breakTo, breakGapPx: oldGapPx};
+    const [wx,wy] = canvasToWorld(mx,my, paramsOld);
+
+    const mp2 = minorPx * newZ;
+    const sx2 = mp2 * xSmallPerUnit;
+    const sy2 = mp2 * ySmallPerUnit;
+
+    const removed = (breakTo - breakFrom);
+
+    if(wx <= breakFrom || !(breakTo > breakFrom)){
+      ox = mx - wx*sx2;
+    }else{
+      ox = mx - (wx - removed)*sx2 - newGapPx;
+    }
+    oy = my + wy*sy2;
+
+    $('h_zoom').value = (Math.floor(newZ*100)/100).toFixed(2);
+    $('h_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
+    refreshVals();
+    redraw();
+  }, {passive:false});
+
+  function downloadPNG(){
+    redraw();
+    const a = document.createElement("a");
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    a.download = `hist-poly-textbook-${ts}.png`;
+    a.href = cv.toDataURL("image/png");
+    a.click();
+  }
+  function downloadSVG(){
+    redraw();
+    const png = cv.toDataURL("image/png");
+    const W=cv.width,H=cv.height;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      <image href="${png}" width="${W}" height="${H}" />
+    </svg>`;
+    const blob = new Blob([svg], {type:"image/svg+xml"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    a.download = `hist-poly-textbook-${ts}.svg`;
+    a.href = url;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }
+
+  $('h_fitBtn').addEventListener("click", fitToData);
+  $('h_pngBtn').addEventListener("click", downloadPNG);
+  $('h_svgBtn').addEventListener("click", downloadSVG);
+
+  const live = [
+    'h_data','h_showHist','h_showPoly','h_showMidDots','h_showMidLabels',
+    'h_zoom','h_minorPx','h_majorEvery','h_barAlpha',
+    'h_yLabelStep','h_csize','h_origin','h_xSmallPerUnit','h_ySmallPerUnit',
+    'h_fontAxis','h_fontTicks','h_fontMid'
+  ];
+  live.forEach(id => {
+    const el = $(id);
+    if(el) el.addEventListener("input", ()=>{ refreshVals(); redraw(); });
+  });
+
+  refreshVals();
+  redraw();
+  setCursor("can-grab");
+})();
+</script>
+
+</body>
+</html>

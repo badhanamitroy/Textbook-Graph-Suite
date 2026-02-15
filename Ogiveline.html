@@ -1,0 +1,1011 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Ogive Line — Graph Paper Suite</title>
+
+  <link rel="stylesheet" href="assets/css/common.css">
+  <script src="assets/js/common.js"></script>
+
+  <style>
+    /* Ogive-only internal extras (table styling from your combined file) */
+    .tableCard{
+      margin-top:12px;
+      background:rgba(17,26,51,0.88);
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:18px;
+      overflow:hidden;
+      box-shadow:0 20px 55px rgba(0,0,0,0.45);
+    }
+    .sheetTitle{
+      padding:12px 14px;
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      display:flex; gap:10px; justify-content:space-between; align-items:center;
+      font-weight:800;
+    }
+    .sheetTitle small{ font-weight:650; color:rgba(255,255,255,0.70); }
+    .sheetWrap{ padding:12px 14px; }
+
+    .paperTable{
+      width:100%;
+      border-collapse:separate;
+      border-spacing:0;
+      table-layout:fixed;
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:14px;
+      overflow:hidden;
+      background:rgba(0,0,0,0.18);
+    }
+    .paperTable thead th{
+      font-size:12px;
+      color:rgba(255,255,255,0.78);
+      background:rgba(255,255,255,0.06);
+      border-bottom:1px solid rgba(255,255,255,0.10);
+      padding:10px 8px;
+      text-align:center;
+      font-weight:800;
+    }
+    .paperTable tbody td{
+      border-bottom:1px solid rgba(255,255,255,0.08);
+      border-right:1px solid rgba(255,255,255,0.08);
+      padding:0;
+    }
+    .paperTable tbody tr:last-child td{ border-bottom:none; }
+    .paperTable tbody td:last-child{ border-right:none; }
+
+    .rowIndex{
+      width:44px;
+      text-align:center;
+      color:rgba(255,255,255,0.65);
+      font-size:12px;
+      font-weight:800;
+      background:rgba(255,255,255,0.04);
+    }
+    .cellInput{
+      width:100%;
+      padding:10px 8px;
+      border:0;
+      outline:none;
+      background:transparent;
+      color:#e9eefc;
+      font-size:14px;
+      font-weight:650;
+      text-align:center;
+    }
+    .cellInput:focus{
+      background:rgba(61,220,151,0.10);
+      box-shadow: inset 0 0 0 2px rgba(61,220,151,0.35);
+    }
+    .sheetBtns{
+      margin-top:10px;
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .sheetHint{
+      margin-top:8px;
+      color:rgba(255,255,255,0.70);
+      font-size:12px;
+      line-height:1.35;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="topbarInner">
+      <div class="brand">
+        Graph Paper Suite
+        <span>Ogive (Cumulative Frequency Curve)</span>
+      </div>
+      <div>
+        <button class="good" onclick="location.href='index.html'">← Back</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="page">
+    <div class="wrap">
+
+      <div class="card">
+        <h2>
+          Ogive (Cumulative Frequency Curve)
+          <span class="pill">table input • drag points • pan/zoom • FIT</span>
+        </h2>
+        <div class="body">
+
+          <div class="tableCard">
+            <div class="sheetTitle">
+              <div>Ogive — Table Input</div>
+              <small>Drag dots to change CF</small>
+            </div>
+            <div class="sheetWrap">
+              <table class="paperTable" id="o_table">
+                <thead>
+                  <tr>
+                    <th class="rowIndex">#</th>
+                    <th>Lower Boundary</th>
+                    <th>Upper Boundary</th>
+                    <th>Cumulative Freq</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+
+              <div class="sheetBtns">
+                <button id="o_addRow">+ Row</button>
+                <button id="o_delRow">− Row</button>
+                <button class="good" id="o_useTable">Use Table → Draw</button>
+              </div>
+
+              <div class="sheetHint">
+                ✅ Paste works (tab/newline).<br/>
+                ✅ Dragging a dot changes only the <b>cumulative frequency (Y)</b>. X stays fixed at upper boundary.
+              </div>
+
+              <textarea id="o_data" style="display:none;">49.5,54.5,1
+54.5,59.5,3
+59.5,64.5,6
+64.5,69.5,9
+69.5,74.5,13
+74.5,79.5,18
+79.5,84.5,25
+84.5,89.5,27
+89.5,94.5,29
+94.5,99.5,30</textarea>
+            </div>
+          </div>
+
+          <div class="two">
+            <label style="display:flex;align-items:center;gap:10px;">
+              <input id="o_showDots" type="checkbox" checked />
+              <span style="color:var(--muted);font-size:13px;">Show dots</span>
+            </label>
+            <label style="display:flex;align-items:center;gap:10px;">
+              <input id="o_showPointLabels" type="checkbox" />
+              <span style="color:var(--muted);font-size:13px;">Show point labels</span>
+            </label>
+          </div>
+
+          <div class="row">
+            <label>Zoom</label>
+            <input id="o_zoom" type="range" min="0.35" max="4.0" value="1.00" step="0.05" />
+            <div class="val" id="o_zoomVal"></div>
+          </div>
+
+          <div class="two">
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
+              <input id="o_minorPx" type="number" value="10" min="4" step="1" />
+            </div>
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Major every (squares)</label>
+              <input id="o_majorEvery" type="number" value="5" min="2" step="1" />
+            </div>
+          </div>
+
+          <div class="two">
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Y labels step</label>
+              <input id="o_yLabelStep" type="number" value="5" min="1" step="1" />
+            </div>
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Curve thickness</label>
+              <input id="o_curveW" type="number" value="4" min="1" max="10" step="1" />
+            </div>
+          </div>
+
+          <div class="two">
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Canvas (w,h)</label>
+              <input id="o_csize" value="980,600" />
+            </div>
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
+              <input id="o_origin" value="170,500" />
+            </div>
+          </div>
+
+          <div class="two">
+            <div>
+              <label style="color:var(--muted);font-size:13px;">X: squares per 1 unit</label>
+              <input id="o_xSmallPerUnit" type="number" value="1" min="1" step="1" />
+            </div>
+            <div>
+              <label style="color:var(--muted);font-size:13px;">Y: squares per 1 unit</label>
+              <input id="o_ySmallPerUnit" type="number" value="1" min="1" step="1" />
+            </div>
+          </div>
+
+          <div class="section">Font sizes</div>
+          <div class="row">
+            <label>Axis letters (X,Y,O)</label>
+            <input id="o_fontAxis" type="range" min="10" max="40" value="16" step="1" />
+            <div class="val" id="o_fontAxisVal"></div>
+          </div>
+          <div class="row">
+            <label>Tick labels (numbers)</label>
+            <input id="o_fontTicks" type="range" min="10" max="34" value="14" step="1" />
+            <div class="val" id="o_fontTicksVal"></div>
+          </div>
+          <div class="row">
+            <label>Point labels</label>
+            <input id="o_fontPoint" type="range" min="10" max="34" value="12" step="1" />
+            <div class="val" id="o_fontPointVal"></div>
+          </div>
+
+          <div class="btns">
+            <button id="o_fitBtn">Fit</button>
+            <button class="good" id="o_pngBtn">PNG</button>
+            <button class="good" id="o_svgBtn">SVG</button>
+          </div>
+
+          <div class="hint">
+            Drag a dot to edit cumulative frequency. We auto-enforce: CF is non-decreasing and ≥ 0.
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>Graph <span class="pill">ogive curve</span></h2>
+        <div class="canvasWrap">
+          <canvas id="o_cv" width="980" height="600"></canvas>
+          <div class="small">Pan by dragging empty area. Drag dot to edit CF. Zoom with wheel.</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+<script>
+/* ============================
+   Shared: Table Grid Builder
+============================ */
+function makeTableGrid(opts){
+  const {
+    tableId, textareaId,
+    addBtnId, delBtnId, useBtnId,
+    columnsCount = 3
+  } = opts;
+
+  const table = document.getElementById(tableId);
+  const tbody = table.querySelector("tbody");
+  const hidden = document.getElementById(textareaId);
+
+  const btnAdd = document.getElementById(addBtnId);
+  const btnDel = document.getElementById(delBtnId);
+  const btnUse = document.getElementById(useBtnId);
+
+  function makeCellInput(value=""){
+    const inp = document.createElement("input");
+    inp.className = "cellInput";
+    inp.value = value;
+    inp.inputMode = "decimal";
+    inp.autocomplete = "off";
+    inp.spellcheck = false;
+    return inp;
+  }
+
+  function renumber(){
+    [...tbody.querySelectorAll("tr")].forEach((tr,i)=>{
+      tr.querySelector(".rowIndex").textContent = String(i+1);
+    });
+  }
+
+  function addRow(values){
+    const tr = document.createElement("tr");
+
+    const idx = document.createElement("td");
+    idx.className = "rowIndex";
+    idx.textContent = String(tbody.children.length + 1);
+    tr.appendChild(idx);
+
+    for(let c=0;c<columnsCount;c++){
+      const td = document.createElement("td");
+      const inp = makeCellInput((values && values[c]) ? values[c] : "");
+      td.appendChild(inp);
+      tr.appendChild(td);
+    }
+
+    tbody.appendChild(tr);
+    renumber();
+  }
+
+  function delRow(){
+    if(tbody.children.length > 1) tbody.removeChild(tbody.lastElementChild);
+    renumber();
+  }
+
+  function tableToText(){
+    const lines = [];
+    for(const tr of [...tbody.querySelectorAll("tr")]){
+      const inputs = [...tr.querySelectorAll("input.cellInput")];
+      const vals = inputs.map(i => i.value.trim());
+      const allEmpty = vals.every(v => !v);
+      if(allEmpty) continue;
+      lines.push(vals.join(","));
+    }
+    return lines.join("\n");
+  }
+
+  function textToTable(text){
+    tbody.innerHTML = "";
+    const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
+    if(lines.length === 0){
+      addRow();
+      return;
+    }
+    for(const line of lines){
+      const parts = line.split(",").map(s=>s.trim());
+      addRow(parts.slice(0, columnsCount));
+    }
+  }
+
+  table.addEventListener("paste", (e) => {
+    const active = document.activeElement;
+    if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
+    e.preventDefault();
+
+    const text = (e.clipboardData || window.clipboardData).getData("text");
+    const rows = text.split(/\r?\n/).filter(r=>r.length);
+    const grid = rows.map(r => r.split("\t"));
+
+    const startTd = active.closest("td");
+    const startTr = active.closest("tr");
+    const r0 = [...tbody.children].indexOf(startTr);
+    const c0 = [...startTr.querySelectorAll("td")].indexOf(startTd) - 1;
+
+    while(tbody.children.length < r0 + grid.length) addRow();
+
+    for(let r=0;r<grid.length;r++){
+      const tr = tbody.children[r0 + r];
+      const ins = [...tr.querySelectorAll("input.cellInput")];
+      for(let c=0;c<grid[r].length;c++){
+        const cc = c0 + c;
+        if(cc >= 0 && cc < columnsCount){
+          ins[cc].value = grid[r][c].trim();
+        }
+      }
+    }
+  });
+
+  table.addEventListener("keydown", (e) => {
+    const active = document.activeElement;
+    if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
+    if(e.key === "Enter"){
+      e.preventDefault();
+      const all = [...table.querySelectorAll("input.cellInput")];
+      const i = all.indexOf(active);
+      if(i >= 0 && i < all.length-1) all[i+1].focus();
+    }
+  });
+
+  btnAdd?.addEventListener("click", () => addRow());
+  btnDel?.addEventListener("click", () => delRow());
+
+  btnUse?.addEventListener("click", () => {
+    hidden.value = tableToText();
+    hidden.dispatchEvent(new Event("input", {bubbles:true}));
+  });
+
+  textToTable(hidden.value);
+
+  return { textToTable };
+}
+
+/* ============================
+   Ogive App (same logic)
+============================ */
+(() => {
+  const oGrid = makeTableGrid({
+    tableId:"o_table",
+    textareaId:"o_data",
+    addBtnId:"o_addRow",
+    delBtnId:"o_delRow",
+    useBtnId:"o_useTable",
+    columnsCount: 3
+  });
+
+  const cv = document.getElementById('o_cv');
+  const ctx = cv.getContext('2d');
+  const $ = (id) => document.getElementById(id);
+
+  function setVal(spanId, inputId){
+    const s = $(spanId), i = $(inputId);
+    if(s && i) s.textContent = i.value;
+  }
+  function refreshVals(){
+    setVal('o_zoomVal','o_zoom');
+    setVal('o_fontAxisVal','o_fontAxis');
+    setVal('o_fontTicksVal','o_fontTicks');
+    setVal('o_fontPointVal','o_fontPoint');
+  }
+
+  function parseData(text){
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const rows = [];
+    for(const line of lines){
+      const parts = line.split(',').map(s => s.trim());
+      if(parts.length < 3) throw new Error("Bad line: " + line);
+      const lo = Number(parts[0]), hi = Number(parts[1]), cf = Number(parts[2]);
+      if(!Number.isFinite(lo) || !Number.isFinite(hi) || !Number.isFinite(cf)) throw new Error("Bad numbers: " + line);
+      if(hi <= lo) throw new Error("Upper boundary must be > lower boundary: " + line);
+      rows.push({lo, hi, cf});
+    }
+    rows.sort((a,b)=>a.lo-b.lo);
+    for(let i=1;i<rows.length;i++){
+      if(rows[i].cf < rows[i-1].cf) throw new Error("Cumulative frequency must be nondecreasing (line " + (i+1) + ")");
+    }
+    return rows;
+  }
+
+  function applyCanvasSize(){
+    const s = parsePair($('o_csize').value);
+    if(!s) throw new Error("Canvas size format: w,h");
+    const [w,h] = s;
+    cv.width = Math.floor(w);
+    cv.height = Math.floor(h);
+  }
+
+  function xMapWithBreak(x, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx){
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    if(!(breakTo > breakFrom)) return ox + x*sx;
+    if(x <= breakFrom) return ox + x*sx;
+
+    const removed = (breakTo - breakFrom);
+    const xCompressed = x - removed;
+    return ox + xCompressed*sx + breakGapPx;
+  }
+
+  function xUnmapWithBreak(px, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx){
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    if(!(breakTo > breakFrom)) return (px-ox)/sx;
+
+    const breakFromPx = ox + breakFrom*sx;
+    const afterGapStartPx = breakFromPx + breakGapPx;
+
+    if(px <= breakFromPx) return (px-ox)/sx;
+    if(px < afterGapStartPx) return breakFrom;
+
+    const removed = (breakTo - breakFrom);
+    const xCompressed = (px - ox - breakGapPx)/sx;
+    return xCompressed + removed;
+  }
+
+  function worldToCanvas(x,y, params){
+    const {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom, breakFrom, breakTo, breakGapPx} = params;
+    const mp = minorPx * zoom;
+    const sy = mp * ySmallPerUnit;
+    const px = xMapWithBreak(x, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx);
+    const py = oy - y*sy;
+    return [px, py];
+  }
+
+  function canvasToWorld(px,py, params){
+    const {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom, breakFrom, breakTo, breakGapPx} = params;
+    const mp = minorPx * zoom;
+    const sy = mp * ySmallPerUnit;
+    const x = xUnmapWithBreak(px, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx);
+    const y = (oy - py)/sy;
+    return [x,y];
+  }
+
+  function clear(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ctx.fillStyle="#fff";
+    ctx.fillRect(0,0,cv.width,cv.height);
+  }
+
+  function drawGraphPaper(ox,oy, minorPx, majorEvery, zoom){
+    const mp = minorPx * zoom;
+    const majorPx = mp * majorEvery;
+
+    ctx.save();
+    ctx.strokeStyle="#000";
+
+    ctx.globalAlpha=0.12; ctx.lineWidth=1;
+    for(let x=ox; x<=cv.width; x+=mp){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let x=ox; x>=0; x-=mp){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let y=oy; y<=cv.height; y+=mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+    for(let y=oy; y>=0; y-=mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+
+    ctx.globalAlpha=0.35; ctx.lineWidth=1.5;
+    for(let x=ox; x<=cv.width; x+=majorPx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let x=ox; x>=0; x-=majorPx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for(let y=oy; y<=cv.height; y+=majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+    for(let y=oy; y>=0; y-=majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+
+    ctx.restore();
+  }
+
+  function arrowhead(x1,y1,x2,y2,size=10){
+    const ang = Math.atan2(y2-y1,x2-x1);
+    ctx.beginPath();
+    ctx.moveTo(x2,y2);
+    ctx.lineTo(x2 - size*Math.cos(ang - Math.PI/7), y2 - size*Math.sin(ang - Math.PI/7));
+    ctx.lineTo(x2 - size*Math.cos(ang + Math.PI/7), y2 - size*Math.sin(ang + Math.PI/7));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function readFonts(){
+    return {
+      axis: Number($('o_fontAxis')?.value ?? 16),
+      ticks: Number($('o_fontTicks')?.value ?? 14),
+      point: Number($('o_fontPoint')?.value ?? 12),
+    };
+  }
+
+  function drawAxes(ox,oy, fonts){
+    ctx.save();
+    ctx.strokeStyle="#000";
+    ctx.fillStyle="#000";
+    ctx.globalAlpha=0.95;
+    ctx.lineWidth=2;
+
+    ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(cv.width,oy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox,cv.height); ctx.lineTo(ox,0); ctx.stroke();
+
+    arrowhead(0,oy,cv.width,oy,10);
+    arrowhead(ox,cv.height,ox,0,10);
+
+    ctx.font = `${fonts.axis}px system-ui`;
+    ctx.fillText("X", cv.width-18, oy+18);
+    ctx.fillText("Y", ox+10, 16);
+    ctx.fillText("O", ox+6, oy-6);
+
+    ctx.restore();
+  }
+
+  function drawAxisBreakGlyph(params){
+    const {ox, oy, minorPx, majorEvery, zoom, breakFrom, breakTo} = params;
+    if(!(breakTo > breakFrom)) return;
+
+    const gapPx = majorEvery * minorPx * zoom;
+    const cx = ox + gapPx * 0.5;
+    const y = oy;
+
+    const amp = 10;
+    const step = 12;
+
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = 2;
+    ctx.globalAlpha = 0.95;
+
+    ctx.beginPath();
+    ctx.moveTo(cx - step, y - amp);
+    ctx.lineTo(cx - step/2, y + amp);
+    ctx.lineTo(cx, y - amp);
+    ctx.lineTo(cx + step/2, y + amp);
+    ctx.lineTo(cx + step, y - amp);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawYAxisLabels(params, yMax, fonts){
+    const {ox,oy, minorPx, ySmallPerUnit, zoom} = params;
+    const mp = minorPx * zoom;
+    const sy = mp * ySmallPerUnit;
+    const step = Math.max(1, Number($('o_yLabelStep')?.value ?? 5));
+
+    ctx.save();
+    ctx.fillStyle="#000";
+    ctx.strokeStyle="#000";
+    ctx.font = `${fonts.ticks}px system-ui`;
+    ctx.globalAlpha=0.95;
+
+    for(let y=0; y<=yMax; y+=step){
+      const py = oy - y*sy;
+
+      ctx.beginPath();
+      ctx.moveTo(ox-5, py);
+      ctx.lineTo(ox+5, py);
+      ctx.stroke();
+
+      if(y !== 0){
+        ctx.textAlign="right";
+        ctx.textBaseline="middle";
+        ctx.fillText(String(y), ox-8, py);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawXUpperBoundaryLabels(params, xLabels, fonts){
+    const {oy} = params;
+
+    ctx.save();
+    ctx.fillStyle="#000";
+    ctx.strokeStyle="#000";
+    ctx.font = `${fonts.ticks}px system-ui`;
+    ctx.globalAlpha=0.95;
+
+    const tickLen = 6;
+
+    for(const b of xLabels){
+      const [px] = worldToCanvas(b, 0, params);
+
+      ctx.beginPath();
+      ctx.moveTo(px, oy - tickLen);
+      ctx.lineTo(px, oy + tickLen);
+      ctx.stroke();
+
+      ctx.textAlign="center";
+      ctx.textBaseline="top";
+      ctx.fillText(String(b), px, oy + 10);
+    }
+
+    ctx.restore();
+  }
+
+  function computeBounds(rows){
+    const minX = Math.min(...rows.map(r => r.lo));
+    const maxX = Math.max(...rows.map(r => r.hi));
+    const maxY = Math.max(...rows.map(r => r.cf), 1);
+    return {minX,maxX,maxY};
+  }
+
+  function buildOgivePoints(rows){
+    const minLo = rows[0].lo;
+    const pts = [{x: minLo, y: 0, kind:"start", rowIndex:-1}];
+    for(let i=0;i<rows.length;i++){
+      const r = rows[i];
+      pts.push({x: r.hi, y: r.cf, kind:"data", rowIndex:i});
+    }
+    return pts;
+  }
+
+  let pointHit = [];
+  const dragState = {active:false, mode:null, rowIndex:-1, startOx:0, startOy:0, startMx:0, startMy:0};
+
+  function drawOgiveCurve(points, params, fonts){
+    pointHit = [];
+
+    const w = Math.max(1, Number($('o_curveW')?.value ?? 4));
+
+    ctx.save();
+    ctx.strokeStyle="#000";
+    ctx.lineWidth=w;
+    ctx.lineJoin="round";
+    ctx.lineCap="round";
+    ctx.globalAlpha=1;
+
+    ctx.beginPath();
+    let [x0,y0] = worldToCanvas(points[0].x, points[0].y, params);
+    ctx.moveTo(x0,y0);
+    for(let i=1;i<points.length;i++){
+      const [px,py] = worldToCanvas(points[i].x, points[i].y, params);
+      ctx.lineTo(px,py);
+    }
+    ctx.stroke();
+
+    if($('o_showDots')?.checked){
+      ctx.fillStyle="#000";
+      for(const p of points){
+        const [px,py] = worldToCanvas(p.x,p.y, params);
+        const r = 5;
+        ctx.beginPath(); ctx.arc(px,py,r,0,Math.PI*2); ctx.fill();
+
+        if(p.kind === "data"){
+          pointHit.push({rowIndex:p.rowIndex, cx:px, cy:py, r:10});
+        }
+      }
+    }
+
+    if($('o_showPointLabels')?.checked){
+      ctx.fillStyle="#000";
+      ctx.font = `${fonts.point}px system-ui`;
+      ctx.textAlign="left";
+      ctx.textBaseline="bottom";
+      for(const p of points){
+        const [px,py] = worldToCanvas(p.x,p.y, params);
+        ctx.fillText(`(${p.x}, ${p.y})`, px+8, py-8);
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function fitToData(){
+    const rows = parseData($('o_data').value);
+    applyCanvasSize();
+
+    const minorPx = Number($('o_minorPx').value);
+    const xSmallPerUnit = Number($('o_xSmallPerUnit').value);
+    const ySmallPerUnit = Number($('o_ySmallPerUnit').value);
+
+    const {minX,maxX,maxY} = computeBounds(rows);
+
+    const pad = 70;
+    const baseSx = minorPx * xSmallPerUnit;
+    const baseSy = minorPx * ySmallPerUnit;
+
+    const needZx = (cv.width - 2*pad) / ((maxX - minX) * baseSx);
+    const needZy = (cv.height - 2*pad) / ((maxY - 0) * baseSy);
+    let z = Math.min(needZx, needZy);
+    z = Math.max(0.35, Math.min(4.0, z));
+    $('o_zoom').value = (Math.floor(z*100)/100).toFixed(2);
+
+    const oy = cv.height - pad;
+    const ox = pad;
+
+    $('o_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
+    refreshVals();
+    redraw();
+  }
+
+  function redraw(){
+    try{
+      applyCanvasSize();
+      const rows = parseData($('o_data').value);
+      if(rows.length === 0) return;
+
+      const origin = parsePair($('o_origin').value);
+      if(!origin) throw new Error("Origin format: ox,oy");
+      const [ox,oy] = origin;
+
+      const fonts = readFonts();
+
+      const minorPx = Number($('o_minorPx').value);
+      const majorEvery = Number($('o_majorEvery').value);
+      const zoom = Number($('o_zoom').value);
+
+      const firstLowerBoundary = rows[0].lo;
+
+      const breakFrom = 0;
+      const breakTo = firstLowerBoundary;
+      const breakGapPx = majorEvery * minorPx * zoom;
+
+      const params = {
+        ox,oy,
+        minorPx,
+        majorEvery,
+        xSmallPerUnit: Number($('o_xSmallPerUnit').value),
+        ySmallPerUnit: Number($('o_ySmallPerUnit').value),
+        zoom,
+        breakFrom,
+        breakTo,
+        breakGapPx,
+      };
+
+      const {maxY} = computeBounds(rows);
+
+      clear();
+      drawGraphPaper(params.ox, params.oy, params.minorPx, params.majorEvery, params.zoom);
+      drawAxes(params.ox, params.oy, fonts);
+      drawAxisBreakGlyph(params);
+
+      const upperBounds = rows.map(r => r.hi);
+      const xLabels = [rows[0].lo, ...upperBounds];
+      drawXUpperBoundaryLabels(params, xLabels, fonts);
+
+      drawYAxisLabels(params, maxY, fonts);
+
+      const pts = buildOgivePoints(rows);
+      drawOgiveCurve(pts, params, fonts);
+
+    }catch(e){
+      console.warn(e.message);
+    }
+  }
+
+  function canvasXY(e){
+    const r = cv.getBoundingClientRect();
+    return {
+      x: (e.clientX - r.left) * (cv.width / r.width),
+      y: (e.clientY - r.top) * (cv.height / r.height),
+    };
+  }
+
+  function hitTestPoint(mx,my){
+    for(let i=pointHit.length-1;i>=0;i--){
+      const b = pointHit[i];
+      const dx = mx-b.cx, dy = my-b.cy;
+      if(dx*dx + dy*dy <= b.r*b.r) return b.rowIndex;
+    }
+    return -1;
+  }
+
+  function setCursor(mode){
+    cv.classList.remove("can-grab","grabbing","can-move-point");
+    if(mode) cv.classList.add(mode);
+  }
+
+  function rowsToText(rows){
+    return rows.map(r => `${r.lo},${r.hi},${r.cf}`).join("\n");
+  }
+
+  cv.addEventListener("mousemove", (e) => {
+    const {x:mx,y:my} = canvasXY(e);
+
+    if(dragState.active){
+      if(dragState.mode === "pan"){
+        const dx = mx - dragState.startMx;
+        const dy = my - dragState.startMy;
+        $('o_origin').value = `${Math.round(dragState.startOx + dx)},${Math.round(dragState.startOy + dy)}`;
+        redraw();
+        setCursor("grabbing");
+        return;
+      }
+
+      if(dragState.mode === "point"){
+        const origin = parsePair($('o_origin').value);
+        if(!origin) return;
+        const [ox,oy] = origin;
+
+        const rows = parseData($('o_data').value);
+
+        const minorPx = Number($('o_minorPx').value);
+        const majorEvery = Number($('o_majorEvery').value);
+        const zoom = Number($('o_zoom').value);
+        const xSmallPerUnit = Number($('o_xSmallPerUnit').value);
+        const ySmallPerUnit = Number($('o_ySmallPerUnit').value);
+        const firstLowerBoundary = rows[0].lo;
+
+        const breakFrom = 0;
+        const breakTo = firstLowerBoundary;
+        const breakGapPx = majorEvery * minorPx * zoom;
+
+        const params = {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom, breakFrom, breakTo, breakGapPx};
+
+        const [, wy] = canvasToWorld(mx,my, params);
+
+        const i = dragState.rowIndex;
+        if(i < 0 || i >= rows.length) return;
+
+        const prev = (i === 0) ? 0 : rows[i-1].cf;
+        const next = (i === rows.length-1) ? Infinity : rows[i+1].cf;
+
+        let newCF = Math.round(wy);
+        if(!Number.isFinite(newCF)) return;
+        newCF = clamp(newCF, prev, (next===Infinity ? 1e9 : next));
+
+        rows[i].cf = newCF;
+
+        $('o_data').value = rowsToText(rows);
+        $('o_data').dispatchEvent(new Event("input", {bubbles:true}));
+
+        // sync table view
+        oGrid.textToTable($('o_data').value);
+
+        redraw();
+        setCursor("can-move-point");
+        return;
+      }
+    }
+
+    const pi = hitTestPoint(mx,my);
+    if(pi >= 0){
+      setCursor("can-move-point");
+      return;
+    }
+    setCursor("can-grab");
+  });
+
+  cv.addEventListener("mousedown",(e)=>{
+    const {x:mx,y:my} = canvasXY(e);
+
+    const pi = hitTestPoint(mx,my);
+    if(pi >= 0){
+      dragState.active = true;
+      dragState.mode = "point";
+      dragState.rowIndex = pi;
+      setCursor("can-move-point");
+      return;
+    }
+
+    const origin = parsePair($('o_origin').value);
+    if(!origin) return;
+    dragState.active = true;
+    dragState.mode = "pan";
+    dragState.startMx = mx;
+    dragState.startMy = my;
+    dragState.startOx = origin[0];
+    dragState.startOy = origin[1];
+    setCursor("grabbing");
+  });
+
+  window.addEventListener("mouseup",()=>{
+    dragState.active = false;
+    dragState.mode = null;
+    dragState.rowIndex = -1;
+    setCursor("can-grab");
+  });
+
+  cv.addEventListener("wheel",(e)=>{
+    e.preventDefault();
+    const {x:mx,y:my} = canvasXY(e);
+
+    const origin = parsePair($('o_origin').value);
+    if(!origin) return;
+    let [ox,oy]=origin;
+
+    const minorPx = Number($('o_minorPx').value);
+    const majorEvery = Number($('o_majorEvery').value);
+    const xSmallPerUnit = Number($('o_xSmallPerUnit').value);
+    const ySmallPerUnit = Number($('o_ySmallPerUnit').value);
+
+    const rows = parseData($('o_data').value);
+    const firstLowerBoundary = rows[0].lo;
+
+    const oldZ = Number($('o_zoom').value);
+    const factor = (e.deltaY > 0) ? 0.92 : 1.08;
+    let newZ = Math.max(0.35, Math.min(4.0, oldZ*factor));
+
+    const breakFrom = 0;
+    const breakTo = firstLowerBoundary;
+    const oldGapPx = majorEvery * minorPx * oldZ;
+    const newGapPx = majorEvery * minorPx * newZ;
+
+    const paramsOld = {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom: oldZ, breakFrom, breakTo, breakGapPx: oldGapPx};
+    const [wx,wy] = canvasToWorld(mx,my, paramsOld);
+
+    const mp2 = minorPx * newZ;
+    const sx2 = mp2 * xSmallPerUnit;
+    const sy2 = mp2 * ySmallPerUnit;
+
+    const removed = (breakTo - breakFrom);
+
+    if(wx <= breakFrom || !(breakTo > breakFrom)){
+      ox = mx - wx*sx2;
+    }else{
+      ox = mx - (wx - removed)*sx2 - newGapPx;
+    }
+    oy = my + wy*sy2;
+
+    $('o_zoom').value = (Math.floor(newZ*100)/100).toFixed(2);
+    $('o_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
+    refreshVals();
+    redraw();
+  }, {passive:false});
+
+  function downloadPNG(){
+    redraw();
+    const a = document.createElement("a");
+    a.download = `ogive-${isoStamp()}.png`;
+    a.href = cv.toDataURL("image/png");
+    a.click();
+  }
+  function downloadSVG(){
+    redraw();
+    const png = cv.toDataURL("image/png");
+    const W=cv.width,H=cv.height;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      <image href="${png}" width="${W}" height="${H}" />
+    </svg>`;
+    const blob = new Blob([svg], {type:"image/svg+xml"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.download = `ogive-${isoStamp()}.svg`;
+    a.href = url;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  }
+
+  $('o_fitBtn').addEventListener("click", fitToData);
+  $('o_pngBtn').addEventListener("click", downloadPNG);
+  $('o_svgBtn').addEventListener("click", downloadSVG);
+
+  const live = [
+    'o_data','o_showDots','o_showPointLabels',
+    'o_zoom','o_minorPx','o_majorEvery','o_yLabelStep','o_curveW',
+    'o_csize','o_origin','o_xSmallPerUnit','o_ySmallPerUnit',
+    'o_fontAxis','o_fontTicks','o_fontPoint'
+  ];
+  live.forEach(id => {
+    const el = $(id);
+    if(el) el.addEventListener("input", ()=>{ refreshVals(); redraw(); });
+  });
+
+  refreshVals();
+  redraw();
+  setCursor("can-grab");
+})();
+</script>
+
+</body>
+</html>

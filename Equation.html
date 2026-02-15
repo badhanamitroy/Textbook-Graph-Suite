@@ -1,0 +1,817 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Graph Paper Plotter (Friendly + Drag + Zoom)</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111a33;
+      --text:#e9eefc;
+      --muted:#9fb0e6;
+      --stroke:rgba(255,255,255,0.10);
+    }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#070b16,#0b1020);
+      color:var(--text);
+      display:grid;
+      place-items:center;
+      min-height:100vh;
+    }
+    .wrap{
+      width:min(1280px,96vw);
+      display:grid;
+      grid-template-columns: 440px 1fr;
+      gap:16px;
+      align-items:start;
+      padding:18px 0;
+    }
+    .card{
+      background:rgba(17,26,51,0.85);
+      border:1px solid var(--stroke);
+      border-radius:16px;
+      box-shadow:0 20px 50px rgba(0,0,0,0.4);
+      overflow:hidden;
+    }
+    .card h2{
+      margin:0;
+      padding:14px 16px;
+      font-size:16px;
+      border-bottom:1px solid var(--stroke);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .body{ padding:14px 16px; }
+
+    textarea, input, select{
+      width:100%;
+      box-sizing:border-box;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.12);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{ min-height:130px; resize:vertical; }
+
+    .row{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .row label{ flex:1; color:var(--muted); font-size:13px; }
+    .row input[type="range"]{ width:190px; }
+    .row .val{ width:70px; text-align:right; color:var(--text); font-size:13px; opacity:.95; }
+
+    .two{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .three{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; }
+
+    .btns{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    button{
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.08);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:650;
+    }
+    button:hover{ background:rgba(255,255,255,0.12); }
+
+    .hint{
+      margin-top:10px;
+      color:var(--muted);
+      font-size:13px;
+      line-height:1.35;
+    }
+    .sectionTitle{
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid var(--stroke);
+      color:#cfe1ff;
+      font-size:13px;
+      letter-spacing:.2px;
+    }
+
+    .canvasWrap{ padding:12px; }
+    canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      background:#fff;
+      border-radius:12px;
+    }
+
+    canvas.can-grab{ cursor: grab; }
+    canvas.grabbing{ cursor: grabbing; }
+    canvas.can-move-point{ cursor: move; }
+    canvas.can-move-label{ cursor: grab; }
+
+    .small{ font-size:12px; color:var(--muted); margin-top:8px; }
+    .pill{
+      font-size:12px;
+      color:var(--muted);
+      border:1px solid rgba(255,255,255,0.12);
+      padding:6px 10px;
+      border-radius:999px;
+      background:rgba(0,0,0,0.18);
+      white-space:nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="card">
+    <h2>
+      Controls
+      <span class="pill">drag • pan • zoom • PNG</span>
+    </h2>
+    <div class="body">
+
+      <div class="sectionTitle">Curve input</div>
+      <div class="row">
+        <label>Curve mode</label>
+        <select id="mode">
+          <option value="function" selected>Function</option>
+          <option value="points">Points (smooth + draggable)</option>
+        </select>
+      </div>
+
+      <label style="margin-top:10px;color:var(--muted);font-size:13px;">Function y = (JS in x)</label>
+      <input id="fn" value="Math.pow(0.5, x)" />
+      <div class="hint">Example: <b>Math.pow(0.5, x)</b> (matches your table)</div>
+
+      <label style="margin-top:10px;color:var(--muted);font-size:13px;">Points (x,y per line)</label>
+      <textarea id="points">2,0.25
+1,0.5
+0,1
+-1,2
+-2,4
+-3,8
+-4,16
+-5,32</textarea>
+
+      <div class="row">
+        <label><input id="showPoints" type="checkbox" checked /> Show points</label>
+      </div>
+      <div class="row">
+        <label><input id="showLabels" type="checkbox" checked /> Show labels (x,y)</label>
+      </div>
+
+      <div class="sectionTitle">Graph paper scale (ratio)</div>
+      <div class="two">
+        <div>
+          <label style="margin-top:0;color:var(--muted);font-size:13px;">x: small squares per 1 unit</label>
+          <input id="xSmallPerUnit" type="number" value="5" min="1" step="1" />
+        </div>
+        <div>
+          <label style="margin-top:0;color:var(--muted);font-size:13px;">y: small squares per 1 unit</label>
+          <input id="ySmallPerUnit" type="number" value="1" min="1" step="1" />
+        </div>
+      </div>
+
+      <div class="three" style="margin-top:10px;">
+        <div>
+          <label style="margin-top:0;color:var(--muted);font-size:13px;">Minor square (px)</label>
+          <input id="minorPx" type="number" value="10" min="4" step="1" />
+        </div>
+        <div>
+          <label style="margin-top:0;color:var(--muted);font-size:13px;">Major every (minor)</label>
+          <input id="majorEvery" type="number" value="5" min="2" step="1" />
+        </div>
+        <div>
+          <label style="margin-top:0;color:var(--muted);font-size:13px;">Decimals</label>
+          <input id="decimals" type="number" value="2" min="0" max="10" step="1" />
+        </div>
+      </div>
+
+      <div class="sectionTitle">Zoom / Styling</div>
+
+      <div class="row">
+        <label>Zoom (wheel also works)</label>
+        <input id="zoom" type="range" min="0.4" max="3.0" value="1.0" step="0.05" />
+        <div class="val" id="zoomVal"></div>
+      </div>
+
+      <div class="row">
+        <label>Curve thickness</label>
+        <input id="curveWidth" type="range" min="1" max="6" value="3" step="0.1" />
+        <div class="val" id="curveWidthVal"></div>
+      </div>
+
+      <div class="row">
+        <label>Axis label font (X,Y)</label>
+        <input id="axisFont" type="range" min="10" max="28" value="14" />
+        <div class="val" id="axisFontVal"></div>
+      </div>
+      <div class="row">
+        <label>Tick numbers font</label>
+        <input id="tickFont" type="range" min="8" max="22" value="12" />
+        <div class="val" id="tickFontVal"></div>
+      </div>
+      <div class="row">
+        <label>Point label font</label>
+        <input id="labelFont" type="range" min="8" max="22" value="13" />
+        <div class="val" id="labelFontVal"></div>
+      </div>
+
+      <div class="sectionTitle">Canvas</div>
+      <div class="two">
+        <div>
+          <label style="margin-top:0;color:var(--muted);font-size:13px;">Canvas size (w,h)</label>
+          <input id="csize" value="920,560" />
+        </div>
+        <div>
+          <label style="margin-top:0;color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
+          <input id="origin" value="480,300" />
+        </div>
+      </div>
+
+      <div class="btns">
+        <button id="draw">Draw</button>
+        <button id="reset">Reset (your sample)</button>
+        <button id="download">Download PNG</button>
+      </div>
+
+      <div class="hint">
+        ✅ <b>Pan:</b> drag empty space • ✅ <b>Move point:</b> drag a point (Points mode) • ✅ <b>Move label:</b> drag a label • ✅ <b>Zoom:</b> mouse wheel
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>Graph <span class="pill">single curve line</span></h2>
+    <div class="canvasWrap">
+      <canvas id="cv" width="920" height="560"></canvas>
+      <div class="small">Hover a point/label to see cursor change. Wheel zoom keeps origin centered.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+
+  const $ = (id) => document.getElementById(id);
+
+  const valSpans = {
+    zoomVal: $('zoomVal'),
+    curveWidthVal: $('curveWidthVal'),
+    axisFontVal: $('axisFontVal'),
+    tickFontVal: $('tickFontVal'),
+    labelFontVal: $('labelFontVal'),
+  };
+
+  function refreshValueLabels(){
+    valSpans.zoomVal.textContent = Number($('zoom').value).toFixed(2);
+    valSpans.curveWidthVal.textContent = $('curveWidth').value;
+    valSpans.axisFontVal.textContent = $('axisFont').value;
+    valSpans.tickFontVal.textContent = $('tickFont').value;
+    valSpans.labelFontVal.textContent = $('labelFont').value;
+  }
+
+  function parsePair(s) {
+    const [a,b] = s.split(',').map(t => Number(t.trim()));
+    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
+    return [a,b];
+  }
+
+  function parsePoints(text) {
+    return text.split('\n')
+      .map(s => s.trim()).filter(Boolean)
+      .map(line => parsePair(line))
+      .filter(Boolean);
+  }
+
+  function stringifyPoints(points, decimals){
+    const d = Math.max(0, Math.min(10, decimals|0));
+    const fmt = (n) => {
+      const isInt = Math.abs(n - Math.round(n)) < 1e-12;
+      if (isInt) return String(Math.round(n));
+      return n.toFixed(d).replace(/0+$/,'').replace(/\.$/,'');
+    };
+    return points.map(([x,y]) => `${fmt(x)},${fmt(y)}`).join('\n');
+  }
+
+  // Interaction state
+  let pointHitBoxes = [];   // {i, cx, cy, r}
+  let labelHitBoxes = [];   // {i, x, y, w, h}
+  const labelOffsets = [];  // per point: {dx, dy}
+
+  const drag = {
+    active: false,
+    mode: null,         // "pan" | "point" | "label"
+    pointIndex: -1,
+    startMx: 0,
+    startMy: 0,
+    startOx: 0,
+    startOy: 0,
+    startDx: 0,
+    startDy: 0,
+  };
+
+  function canvasXYFromEvent(e){
+    const rect = cv.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (cv.width / rect.width),
+      y: (e.clientY - rect.top) * (cv.height / rect.height),
+    };
+  }
+
+  function setCanvasCursor(cls){
+    cv.classList.remove("can-grab","grabbing","can-move-point","can-move-label");
+    if (cls) cv.classList.add(cls);
+  }
+
+  function ensureLabelOffsets(points){
+    while (labelOffsets.length < points.length) labelOffsets.push({dx: 6, dy: -6});
+    if (labelOffsets.length > points.length) labelOffsets.length = points.length;
+  }
+
+  // world -> canvas using "small squares per unit" and zoom factor (applied to minorPx)
+  function worldToCanvas(x, y, ox, oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom) {
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit; // px per 1 x-unit
+    const sy = mp * ySmallPerUnit; // px per 1 y-unit
+    return [ox + x * sx, oy - y * sy];
+  }
+  function canvasToWorld(px, py, ox, oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom){
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    const sy = mp * ySmallPerUnit;
+    const x = (px - ox) / sx;
+    const y = (oy - py) / sy;
+    return [x, y];
+  }
+
+  function clear() { ctx.clearRect(0,0,cv.width,cv.height); }
+
+  function drawGraphPaper(ox, oy, minorPx, majorEvery, zoom) {
+    const mp = minorPx * zoom;
+    const majorPx = mp * majorEvery;
+
+    ctx.save();
+    ctx.strokeStyle = "#000";
+
+    // Minor grid
+    ctx.lineWidth = 1;
+    ctx.globalAlpha = 0.12;
+
+    for (let x = ox; x <= cv.width; x += mp) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for (let x = ox; x >= 0; x -= mp)        { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+
+    for (let y = oy; y <= cv.height; y += mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+    for (let y = oy; y >= 0; y -= mp)        { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+
+    // Major grid
+    ctx.globalAlpha = 0.35;
+    ctx.lineWidth = 1.5;
+
+    for (let x = ox; x <= cv.width; x += majorPx) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+    for (let x = ox; x >= 0; x -= majorPx)        { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
+
+    for (let y = oy; y <= cv.height; y += majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+    for (let y = oy; y >= 0; y -= majorPx)        { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
+
+    ctx.restore();
+  }
+
+  function arrowhead(x1, y1, x2, y2, size=10) {
+    const ang = Math.atan2(y2-y1, x2-x1);
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - size*Math.cos(ang - Math.PI/7), y2 - size*Math.sin(ang - Math.PI/7));
+    ctx.lineTo(x2 - size*Math.cos(ang + Math.PI/7), y2 - size*Math.sin(ang + Math.PI/7));
+    ctx.closePath();
+    ctx.fill();
+  }
+
+  function drawAxes(ox, oy, axisWidth, axisFontPx, tickFontPx, minorPx, xSmallPerUnit, ySmallPerUnit, zoom) {
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.fillStyle = "#000";
+    ctx.globalAlpha = 0.95;
+    ctx.lineWidth = axisWidth;
+
+    // axes
+    ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(cv.width,oy); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ox,cv.height); ctx.lineTo(ox,0); ctx.stroke();
+
+    arrowhead(0, oy, cv.width, oy, 10);
+    arrowhead(ox, cv.height, ox, 0, 10);
+
+    ctx.font = `${axisFontPx}px system-ui`;
+    ctx.fillText("X", cv.width - 18, oy + 18);
+    ctx.fillText("X′", 6, oy + 18);
+    ctx.fillText("Y", ox + 10, 16);
+    ctx.fillText("Y′", ox + 10, cv.height - 10);
+    ctx.fillText("O", ox + 6, oy - 6);
+
+    // ticks + numbers
+    ctx.font = `${tickFontPx}px system-ui`;
+    ctx.lineWidth = 1;
+
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    const sy = mp * ySmallPerUnit;
+
+    const maxXUnits = Math.ceil(Math.max(ox, cv.width-ox)/sx);
+    const maxYUnits = Math.ceil(Math.max(oy, cv.height-oy)/sy);
+
+    for (let i=-maxXUnits; i<=maxXUnits; i++) {
+      const x = ox + i*sx;
+      ctx.beginPath(); ctx.moveTo(x, oy-4); ctx.lineTo(x, oy+4); ctx.stroke();
+      if (i!==0 && i%2===0) ctx.fillText(String(i), x-4, oy+16);
+    }
+    for (let j=-maxYUnits; j<=maxYUnits; j++) {
+      const y = oy - j*sy;
+      ctx.beginPath(); ctx.moveTo(ox-4, y); ctx.lineTo(ox+4, y); ctx.stroke();
+      if (j!==0 && j%2===0) ctx.fillText(String(j), ox+8, y+4);
+    }
+
+    ctx.restore();
+  }
+
+  function drawCurveFromFunction(fnExpr, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom) {
+    let f;
+    try {
+      f = new Function("x", `return (${fnExpr});`);
+      const t = f(0);
+      if (!Number.isFinite(t)) throw new Error("not finite at x=0");
+    } catch (e) {
+      alert("Function error: " + e.message);
+      return;
+    }
+
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    const xMin = -(ox / sx);
+    const xMax = (cv.width - ox) / sx;
+
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = curveWidth;
+    ctx.globalAlpha = 1;
+
+    ctx.beginPath();
+    let started = false;
+
+    const steps = 1600;
+    const step = (xMax - xMin) / steps;
+
+    for (let x=xMin; x<=xMax; x += step) {
+      const y = f(x);
+      if (!Number.isFinite(y)) { started = false; continue; }
+      const [px,py] = worldToCanvas(x,y,ox,oy,minorPx,xSmallPerUnit,ySmallPerUnit,zoom);
+      if (!started) { ctx.moveTo(px,py); started = true; }
+      else ctx.lineTo(px,py);
+    }
+
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function drawCurveFromPoints(points, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom) {
+    if (points.length < 2) return;
+
+    points = [...points].sort((a,b)=>a[0]-b[0]);
+    const p = points.map(([x,y]) => worldToCanvas(x,y,ox,oy,minorPx,xSmallPerUnit,ySmallPerUnit,zoom));
+
+    ctx.save();
+    ctx.strokeStyle = "#000";
+    ctx.lineWidth = curveWidth;
+    ctx.globalAlpha = 1;
+
+    ctx.beginPath();
+    ctx.moveTo(p[0][0], p[0][1]);
+
+    for (let i=1; i<p.length-1; i++) {
+      const midX = (p[i][0] + p[i+1][0]) / 2;
+      const midY = (p[i][1] + p[i+1][1]) / 2;
+      ctx.quadraticCurveTo(p[i][0], p[i][1], midX, midY);
+    }
+    ctx.lineTo(p[p.length-1][0], p[p.length-1][1]);
+
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function fmt(n, decimals) {
+    if (!Number.isFinite(n)) return String(n);
+    const isInt = Math.abs(n - Math.round(n)) < 1e-12;
+    if (isInt) return String(Math.round(n));
+    return n.toFixed(decimals).replace(/0+$/,'').replace(/\.$/,'');
+  }
+
+  function drawPointsAndLabels(points, ox, oy, minorPx, xSmallPerUnit, ySmallPerUnit, showPoints, showLabels, labelFontPx, decimals, zoom) {
+    pointHitBoxes = [];
+    labelHitBoxes = [];
+
+    ctx.save();
+    ctx.fillStyle = "#000";
+    ctx.font = `${labelFontPx}px system-ui`;
+
+    for (let i=0; i<points.length; i++) {
+      const [x,y] = points[i];
+      const [px,py] = worldToCanvas(x,y,ox,oy,minorPx,xSmallPerUnit,ySmallPerUnit,zoom);
+
+      // point hit circle
+      pointHitBoxes.push({ i, cx:px, cy:py, r:8 });
+
+      if (showPoints) {
+        ctx.beginPath();
+        ctx.arc(px, py, 3.5, 0, Math.PI*2);
+        ctx.fill();
+      }
+
+      if (showLabels) {
+        const off = labelOffsets[i] || {dx:6, dy:-6};
+        const text = `(${fmt(x,decimals)}, ${fmt(y,decimals)})`;
+
+        // measure text -> label hit box
+        const w = ctx.measureText(text).width;
+        const h = labelFontPx;
+
+        const tx = px + off.dx;
+        const ty = py + off.dy;
+
+        // draw text (no background to keep textbook feel)
+        ctx.fillText(text, tx, ty);
+
+        labelHitBoxes.push({
+          i,
+          x: tx,
+          y: ty - h,
+          w: w,
+          h: h + 4
+        });
+      }
+    }
+
+    ctx.restore();
+  }
+
+  function applyCanvasSize() {
+    const s = parsePair($('csize').value);
+    if (!s) return alert("Canvas size format: w,h  (e.g., 920,560)");
+    const [w,h] = s;
+    if (!(w>100 && h>100)) return alert("Canvas size too small.");
+    cv.width = Math.floor(w);
+    cv.height = Math.floor(h);
+  }
+
+  function hitTestPoint(mx,my){
+    for (let k=pointHitBoxes.length-1; k>=0; k--){
+      const b = pointHitBoxes[k];
+      const dx = mx - b.cx, dy = my - b.cy;
+      if (dx*dx + dy*dy <= b.r*b.r) return b.i;
+    }
+    return -1;
+  }
+  function hitTestLabel(mx,my){
+    for (let k=labelHitBoxes.length-1; k>=0; k--){
+      const b = labelHitBoxes[k];
+      if (mx>=b.x && mx<=b.x+b.w && my>=b.y && my<=b.y+b.h) return b.i;
+    }
+    return -1;
+  }
+
+  function redraw() {
+    applyCanvasSize();
+
+    const origin = parsePair($('origin').value);
+    if (!origin) return alert("Origin format: ox,oy (e.g., 480,300)");
+    const [ox,oy] = origin;
+
+    const minorPx = Number($('minorPx').value);
+    const majorEvery = Number($('majorEvery').value);
+    const xSmallPerUnit = Number($('xSmallPerUnit').value);
+    const ySmallPerUnit = Number($('ySmallPerUnit').value);
+    const decimals = Math.max(0, Math.min(10, Number($('decimals').value) || 2));
+    const zoom = Number($('zoom').value);
+
+    const axisWidth = 2;
+    const curveWidth = Number($('curveWidth').value);
+    const axisFontPx = Number($('axisFont').value);
+    const tickFontPx = Number($('tickFont').value);
+    const labelFontPx = Number($('labelFont').value);
+
+    const mode = $('mode').value;
+    const showPoints = $('showPoints').checked;
+    const showLabels = $('showLabels').checked;
+
+    if (!(minorPx>0 && majorEvery>=2 && xSmallPerUnit>0 && ySmallPerUnit>0)) {
+      return alert("Check minorPx / majorEvery / xSmallPerUnit / ySmallPerUnit");
+    }
+
+    const points = parsePoints($('points').value);
+    ensureLabelOffsets(points);
+
+    clear();
+    drawGraphPaper(ox, oy, minorPx, majorEvery, zoom);
+    drawAxes(ox, oy, axisWidth, axisFontPx, tickFontPx, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
+
+    if (mode === "points") {
+      drawCurveFromPoints(points, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
+    } else {
+      drawCurveFromFunction($('fn').value, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
+    }
+
+    drawPointsAndLabels(points, ox, oy, minorPx, xSmallPerUnit, ySmallPerUnit, showPoints, showLabels, labelFontPx, decimals, zoom);
+  }
+
+  function downloadPNG() {
+    redraw();
+    const a = document.createElement('a');
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    a.download = `graph-${ts}.png`;
+    a.href = cv.toDataURL("image/png");
+    a.click();
+  }
+
+  function resetSample(){
+    $('mode').value = "function";
+    $('fn').value = "Math.pow(0.5, x)";
+    $('points').value = `2,0.25
+1,0.5
+0,1
+-1,2
+-2,4
+-3,8
+-4,16
+-5,32`;
+
+    $('showPoints').checked = true;
+    $('showLabels').checked = true;
+
+    $('xSmallPerUnit').value = 5;
+    $('ySmallPerUnit').value = 1;
+    $('minorPx').value = 10;
+    $('majorEvery').value = 5;
+    $('decimals').value = 2;
+
+    $('zoom').value = 1.0;
+    $('curveWidth').value = 3;
+
+    $('axisFont').value = 14;
+    $('tickFont').value = 12;
+    $('labelFont').value = 13;
+
+    $('csize').value = "920,560";
+    $('origin').value = "480,300";
+
+    labelOffsets.length = 0;
+
+    refreshValueLabels();
+    redraw();
+  }
+
+  // ---------- Interactive Pan/Zoom/Drag ----------
+  function updateOrigin(ox, oy){
+    $('origin').value = `${Math.round(ox)},${Math.round(oy)}`;
+  }
+
+  cv.addEventListener("mousemove", (e) => {
+    const {x:mx, y:my} = canvasXYFromEvent(e);
+
+    if (drag.active){
+      const dx = mx - drag.startMx;
+      const dy = my - drag.startMy;
+
+      if (drag.mode === "pan"){
+        updateOrigin(drag.startOx + dx, drag.startOy + dy);
+        redraw();
+        setCanvasCursor("grabbing");
+        return;
+      }
+
+      const points = parsePoints($('points').value);
+      const origin = parsePair($('origin').value);
+      if (!origin) return;
+      const [ox,oy] = origin;
+
+      const minorPx = Number($('minorPx').value);
+      const xSmallPerUnit = Number($('xSmallPerUnit').value);
+      const ySmallPerUnit = Number($('ySmallPerUnit').value);
+      const zoom = Number($('zoom').value);
+
+      if (drag.mode === "point"){
+        // move point by cursor: convert mouse canvas -> world
+        const [wx, wy] = canvasToWorld(mx, my, ox, oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
+        points[drag.pointIndex] = [wx, wy];
+        $('points').value = stringifyPoints(points, Number($('decimals').value));
+        redraw();
+        setCanvasCursor("can-move-point");
+        return;
+      }
+
+      if (drag.mode === "label"){
+        labelOffsets[drag.pointIndex].dx = Math.round(drag.startDx + dx);
+        labelOffsets[drag.pointIndex].dy = Math.round(drag.startDy + dy);
+        redraw();
+        setCanvasCursor("grabbing");
+        return;
+      }
+    }
+
+    // hover state
+    const li = hitTestLabel(mx,my);
+    const pi = hitTestPoint(mx,my);
+
+    const mode = $('mode').value;
+    if (li >= 0){
+      setCanvasCursor("can-move-label");
+      return;
+    }
+    if (pi >= 0 && mode === "points"){
+      setCanvasCursor("can-move-point");
+      return;
+    }
+    setCanvasCursor("can-grab");
+  });
+
+  cv.addEventListener("mousedown", (e) => {
+    const {x:mx, y:my} = canvasXYFromEvent(e);
+
+    const li = hitTestLabel(mx,my);
+    if (li >= 0){
+      drag.active = true;
+      drag.mode = "label";
+      drag.pointIndex = li;
+      drag.startMx = mx;
+      drag.startMy = my;
+      drag.startDx = labelOffsets[li]?.dx ?? 6;
+      drag.startDy = labelOffsets[li]?.dy ?? -6;
+      setCanvasCursor("grabbing");
+      return;
+    }
+
+    const pi = hitTestPoint(mx,my);
+    if (pi >= 0 && $('mode').value === "points"){
+      drag.active = true;
+      drag.mode = "point";
+      drag.pointIndex = pi;
+      drag.startMx = mx;
+      drag.startMy = my;
+      setCanvasCursor("can-move-point");
+      return;
+    }
+
+    // pan
+    const origin = parsePair($('origin').value);
+    if (!origin) return;
+    drag.active = true;
+    drag.mode = "pan";
+    drag.startMx = mx;
+    drag.startMy = my;
+    drag.startOx = origin[0];
+    drag.startOy = origin[1];
+    setCanvasCursor("grabbing");
+  });
+
+  window.addEventListener("mouseup", () => {
+    drag.active = false;
+    drag.mode = null;
+    drag.pointIndex = -1;
+    setCanvasCursor("can-grab");
+  });
+
+  // wheel zoom (keeps origin visually stable)
+  cv.addEventListener("wheel", (e) => {
+    e.preventDefault();
+
+    const z = Number($('zoom').value);
+    const delta = (e.deltaY > 0) ? 0.92 : 1.08;
+    let nz = z * delta;
+    nz = Math.max(0.4, Math.min(3.0, nz));
+
+    $('zoom').value = nz.toFixed(2);
+    refreshValueLabels();
+    redraw();
+  }, { passive:false });
+
+  // ---------- UI wiring ----------
+  $('draw').addEventListener('click', redraw);
+  $('download').addEventListener('click', downloadPNG);
+  $('reset').addEventListener('click', resetSample);
+
+  // live redraw
+  ['mode','fn','points','showPoints','showLabels','xSmallPerUnit','ySmallPerUnit','minorPx','majorEvery','decimals','csize','origin']
+    .forEach(id => $(id).addEventListener('input', redraw));
+
+  ['zoom','curveWidth','axisFont','tickFont','labelFont'].forEach(id => {
+    $(id).addEventListener('input', () => { refreshValueLabels(); redraw(); });
+  });
+
+  refreshValueLabels();
+  redraw();
+})();
+</script>
+
+</body>
+</html>

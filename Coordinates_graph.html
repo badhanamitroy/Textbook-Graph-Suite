@@ -1,0 +1,785 @@
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Coordinates Graph</title>
+
+  <link rel="stylesheet" href="assets/css/common.css">
+  <script src="assets/js/common.js"></script>
+
+  <style>
+    :root { --bg:#0b1020; --panel:#111a33; --text:#e9eefc; --muted:#9fb0e6; }
+    body{
+      margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#070b16,#0b1020);
+      color:var(--text);
+      display:grid; place-items:center; min-height:100vh;
+    }
+    .wrap{
+      width:min(1280px,96vw);
+      display:grid;
+      grid-template-columns: 420px 1fr;
+      gap:16px;
+      align-items:start;
+    }
+    .card{
+      background:rgba(17,26,51,0.85);
+      border:1px solid rgba(255,255,255,0.08);
+      border-radius:16px;
+      box-shadow:0 20px 50px rgba(0,0,0,0.4);
+      overflow:hidden;
+    }
+    .card h2{
+      margin:0; padding:14px 16px;
+      font-size:16px;
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+    .body{ padding:14px 16px; }
+    textarea, input[type="number"]{
+      width:100%;
+      box-sizing:border-box;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.12);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{ min-height:110px; resize:vertical; }
+    .row{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .row label{ flex:1; color:var(--muted); font-size:13px; }
+    .row input[type="range"]{ width: 190px; }
+    .row .val{ width:60px; text-align:right; color:var(--text); font-size:13px; opacity:.9; }
+    .btns{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    button{
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.08);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:600;
+    }
+    button:hover{ background:rgba(255,255,255,0.12); }
+    .hint{ margin-top:10px; color:var(--muted); font-size:13px; line-height:1.35; }
+    .canvasWrap{ padding:12px; }
+    canvas{
+      width:100%; height:auto; display:block;
+      background:#fff;
+      border-radius:12px;
+      cursor: default;
+    }
+    canvas.dragging{ cursor: grabbing; }
+    canvas.can-drag{ cursor: grab; }
+    .small{ font-size:12px; color:var(--muted); margin-top:8px; }
+    .sectionTitle{
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid rgba(255,255,255,0.08);
+      color:#cfe1ff;
+      font-size:13px;
+      letter-spacing:.2px;
+    }
+    .pointControls{
+      margin-top:10px;
+      display:grid;
+      gap:10px;
+    }
+    .pointCard{
+      border:1px solid rgba(255,255,255,0.10);
+      border-radius:12px;
+      padding:10px;
+      background:rgba(0,0,0,0.18);
+    }
+    .pointCardHeader{
+      display:flex; justify-content:space-between; align-items:center;
+      color:#cfe1ff; font-size:13px; margin-bottom:6px;
+    }
+    .miniRow{
+      display:flex; gap:10px; align-items:center; margin-top:8px;
+    }
+    .miniRow label{ flex:1; color:var(--muted); font-size:12px; }
+    .miniRow input[type="range"]{ width: 190px; }
+    .miniRow .val{ width:60px; text-align:right; font-size:12px; opacity:.9; }
+  </style>
+</head>
+
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h2>Inputs + Controls</h2>
+      <div class="body">
+        <textarea id="pointsInput">P(1,-1)
+Q(3,1)
+R(4,10/9)</textarea>
+
+        <div class="row">
+          <label>Margin (units)</label>
+          <input id="marginUnits" type="number" value="2" min="0" step="1" />
+        </div>
+
+        <div class="row">
+          <label><input id="showDiagonals" type="checkbox" /> Show diagonals (dashed)</label>
+        </div>
+        <div class="row">
+          <label><input id="showLabels" type="checkbox" checked /> Show point labels</label>
+        </div>
+
+        <div class="btns">
+          <button id="drawBtn">Draw</button>
+          <button id="resetBtn">Reset Sample</button>
+          <button id="downloadBtn">Download PNG</button>
+        </div>
+
+        <div class="sectionTitle">Font sizes</div>
+        <div class="row">
+          <label>Axis label (X,Y)</label>
+          <input id="fontAxis" type="range" min="12" max="44" value="20" />
+          <div class="val" id="fontAxisVal"></div>
+        </div>
+        <div class="row">
+          <label>Tick numbers</label>
+          <input id="fontTicks" type="range" min="10" max="34" value="16" />
+          <div class="val" id="fontTicksVal"></div>
+        </div>
+        <div class="row">
+          <label>Point labels</label>
+          <input id="fontPoint" type="range" min="10" max="34" value="17" />
+          <div class="val" id="fontPointVal"></div>
+        </div>
+
+        <div class="sectionTitle">Minor ticks (thickness + length)</div>
+        <div class="row">
+          <label>Minor tick thickness</label>
+          <input id="minorTickWidth" type="range" min="1" max="6" value="2" />
+          <div class="val" id="minorTickWidthVal"></div>
+        </div>
+        <div class="row">
+          <label>Minor tick length</label>
+          <input id="minorTickLen" type="range" min="4" max="18" value="8" />
+          <div class="val" id="minorTickLenVal"></div>
+        </div>
+
+        <div class="sectionTitle">Reposition axis numbers (ticks)</div>
+        <div class="row">
+          <label>X-axis tick offset X (px)</label>
+          <input id="xTickDX" type="range" min="-60" max="60" value="0" />
+          <div class="val" id="xTickDXVal"></div>
+        </div>
+        <div class="row">
+          <label>X-axis tick offset Y (px)</label>
+          <input id="xTickDY" type="range" min="-80" max="140" value="28" />
+          <div class="val" id="xTickDYVal"></div>
+        </div>
+
+        <div class="row">
+          <label>Y-axis tick offset X (px)</label>
+          <input id="yTickDX" type="range" min="-160" max="100" value="-20" />
+          <div class="val" id="yTickDXVal"></div>
+        </div>
+        <div class="row">
+          <label>Y-axis tick offset Y (px)</label>
+          <input id="yTickDY" type="range" min="-60" max="60" value="0" />
+          <div class="val" id="yTickDYVal"></div>
+        </div>
+
+        <div class="sectionTitle">Origin label (O) offsets</div>
+        <div class="row">
+          <label>O offset X (px)</label>
+          <input id="oDX" type="range" min="-60" max="160" value="16" />
+          <div class="val" id="oDXVal"></div>
+        </div>
+        <div class="row">
+          <label>O offset Y (px)</label>
+          <input id="oDY" type="range" min="-60" max="160" value="18" />
+          <div class="val" id="oDYVal"></div>
+        </div>
+
+        <div class="sectionTitle">Per-point label offsets (drag OR sliders)</div>
+        <div class="hint">Hover a label → grab → drag. Fractions stay as fractions in labels.</div>
+        <div id="pointControls" class="pointControls"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>XY Graph</h2>
+      <div class="canvasWrap">
+        <canvas id="canvas" width="900" height="700"></canvas>
+        <div class="small">Axes are always shown for any point values.</div>
+      </div>
+    </div>
+  </div>
+
+<script>
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const pointsInput = document.getElementById("pointsInput");
+  const marginUnitsEl = document.getElementById("marginUnits");
+  const showDiagonalsEl = document.getElementById("showDiagonals");
+  const showLabelsEl = document.getElementById("showLabels");
+  const pointControlsWrap = document.getElementById("pointControls");
+
+  const controls = {
+    fontAxis: document.getElementById("fontAxis"),
+    fontTicks: document.getElementById("fontTicks"),
+    fontPoint: document.getElementById("fontPoint"),
+
+    minorTickWidth: document.getElementById("minorTickWidth"),
+    minorTickLen: document.getElementById("minorTickLen"),
+
+    xTickDX: document.getElementById("xTickDX"),
+    xTickDY: document.getElementById("xTickDY"),
+    yTickDX: document.getElementById("yTickDX"),
+    yTickDY: document.getElementById("yTickDY"),
+
+    oDX: document.getElementById("oDX"),
+    oDY: document.getElementById("oDY"),
+  };
+
+  const valSpans = {
+    fontAxisVal: document.getElementById("fontAxisVal"),
+    fontTicksVal: document.getElementById("fontTicksVal"),
+    fontPointVal: document.getElementById("fontPointVal"),
+
+    minorTickWidthVal: document.getElementById("minorTickWidthVal"),
+    minorTickLenVal: document.getElementById("minorTickLenVal"),
+
+    xTickDXVal: document.getElementById("xTickDXVal"),
+    xTickDYVal: document.getElementById("xTickDYVal"),
+    yTickDXVal: document.getElementById("yTickDXVal"),
+    yTickDYVal: document.getElementById("yTickDYVal"),
+
+    oDXVal: document.getElementById("oDXVal"),
+    oDYVal: document.getElementById("oDYVal"),
+  };
+
+  const pointOffsets = Object.create(null);
+
+  let labelBoxes = [];
+  let drag = { active:false, label:null, startMouseX:0, startMouseY:0, startDX:0, startDY:0 };
+
+  function canvasPointFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  }
+
+  function setCanvasCursor(mode) {
+    canvas.classList.remove("dragging");
+    canvas.classList.remove("can-drag");
+    if (mode === "dragging") canvas.classList.add("dragging");
+    else if (mode === "can-drag") canvas.classList.add("can-drag");
+  }
+
+  function parseNumberOrFractionKeepRaw(raw) {
+    const s = String(raw).trim();
+
+    const frac = s.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+    if (frac) {
+      const num = Number(frac[1]);
+      const den = Number(frac[2]);
+      if (!Number.isFinite(num) || !Number.isFinite(den) || den === 0) {
+        throw new Error("Invalid fraction: " + s);
+      }
+      return { value: num / den, raw: s.replace(/\s+/g, "") };
+    }
+
+    const n = Number(s);
+    if (!Number.isFinite(n)) throw new Error("Invalid number: " + s);
+    return { value: n, raw: s };
+  }
+
+  function drawTextBox(ctx, text, x, y, options = {}) {
+    const {
+      fontSize = 14,
+      padding = 6,
+      bg = "rgba(255,255,255,0.92)",
+      color = "#000",
+      align = "left",
+      baseline = "middle"
+    } = options;
+
+    ctx.font = `${fontSize}px system-ui, Arial`;
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+
+    const w = ctx.measureText(text).width;
+    const h = fontSize;
+
+    let bx = x, by = y - h/2;
+    if (align === "center") bx -= w/2;
+    if (align === "right") bx -= w;
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(bx - padding, by - padding, w + padding*2, h + padding*2);
+
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+
+    return { bx: bx - padding, by: by - padding, bw: w + padding*2, bh: h + padding*2 };
+  }
+
+  function refreshValueLabels() {
+    for (const [k, el] of Object.entries(valSpans)) {
+      const inputId = k.replace("Val","");
+      const input = document.getElementById(inputId);
+      if (input) el.textContent = input.value;
+    }
+  }
+
+  function parsePoints(text) {
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const pts = [];
+
+    for (const line of lines) {
+      let m = line.match(/^([A-Za-z])\s*[\(:]?\s*([-\d./\s]+)\s*[, ]\s*([-\d./\s]+)\s*\)?$/);
+      if (m) {
+        const xr = parseNumberOrFractionKeepRaw(m[2]);
+        const yr = parseNumberOrFractionKeepRaw(m[3]);
+        pts.push({ label: m[1].toUpperCase(), x:xr.value, y:yr.value, xRaw:xr.raw, yRaw:yr.raw });
+        continue;
+      }
+
+      m = line.match(/^([-\d./\s]+)\s*[, ]\s*([-\d./\s]+)$/);
+      if (m) {
+        const xr = parseNumberOrFractionKeepRaw(m[1]);
+        const yr = parseNumberOrFractionKeepRaw(m[2]);
+        pts.push({ label:"", x:xr.value, y:yr.value, xRaw:xr.raw, yRaw:yr.raw });
+        continue;
+      }
+
+      throw new Error("Could not parse line: " + line);
+    }
+
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    pts.forEach((p, i) => { if (!p.label) p.label = letters[i] || ("P" + (i+1)); });
+    return pts;
+  }
+
+  function ensurePointOffsets(points) {
+    for (const p of points) {
+      if (!pointOffsets[p.label]) pointOffsets[p.label] = { dx: 20, dy: -20 };
+    }
+  }
+
+  function rebuildPointControls(points) {
+    pointControlsWrap.innerHTML = "";
+    for (const p of points) {
+      const label = p.label;
+      const off = pointOffsets[label];
+
+      const card = document.createElement("div");
+      card.className = "pointCard";
+
+      const head = document.createElement("div");
+      head.className = "pointCardHeader";
+      head.innerHTML = `<span>${label} label offset</span><span style="opacity:.85">${label}(${p.xRaw}, ${p.yRaw})</span>`;
+      card.appendChild(head);
+
+      const rowDX = document.createElement("div");
+      rowDX.className = "miniRow";
+      rowDX.innerHTML = `
+        <label>dx (px)</label>
+        <input id="pt-${label}-dx" type="range" min="-220" max="260" value="${off.dx}" data-label="${label}" data-key="dx">
+        <div class="val" id="val-${label}-dx">${off.dx}</div>
+      `;
+      card.appendChild(rowDX);
+
+      const rowDY = document.createElement("div");
+      rowDY.className = "miniRow";
+      rowDY.innerHTML = `
+        <label>dy (px)</label>
+        <input id="pt-${label}-dy" type="range" min="-240" max="220" value="${off.dy}" data-label="${label}" data-key="dy">
+        <div class="val" id="val-${label}-dy">${off.dy}</div>
+      `;
+      card.appendChild(rowDY);
+
+      card.querySelectorAll("input[type='range']").forEach(sl => {
+        sl.addEventListener("input", (e) => {
+          const lab = e.target.dataset.label;
+          const key = e.target.dataset.key;
+          pointOffsets[lab][key] = Number(e.target.value);
+          document.getElementById(`val-${lab}-${key}`).textContent = e.target.value;
+          drawFromUI();
+        });
+      });
+
+      pointControlsWrap.appendChild(card);
+    }
+  }
+
+  function updatePointSliderUI(label) {
+    const off = pointOffsets[label];
+    const dxEl = document.getElementById(`pt-${label}-dx`);
+    const dyEl = document.getElementById(`pt-${label}-dy`);
+    const dxVal = document.getElementById(`val-${label}-dx`);
+    const dyVal = document.getElementById(`val-${label}-dy`);
+    if (dxEl && dxVal) { dxEl.value = off.dx; dxVal.textContent = off.dx; }
+    if (dyEl && dyVal) { dyEl.value = off.dy; dyVal.textContent = off.dy; }
+  }
+
+  // Always include origin (0,0) => axes always possible
+  function computeBounds(points, marginUnits) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of points) {
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }
+
+    // FORCE include origin ALWAYS
+    minX = Math.min(minX, 0); maxX = Math.max(maxX, 0);
+    minY = Math.min(minY, 0); maxY = Math.max(maxY, 0);
+
+    minX -= marginUnits; maxX += marginUnits;
+    minY -= marginUnits; maxY += marginUnits;
+
+    if (minX === maxX) { minX -= 5; maxX += 5; }
+    if (minY === maxY) { minY -= 5; maxY += 5; }
+
+    return { minX, maxX, minY, maxY };
+  }
+
+  function makeTransform(bounds, padPx) {
+    const W = canvas.width, H = canvas.height;
+    const worldW = bounds.maxX - bounds.minX;
+    const worldH = bounds.maxY - bounds.minY;
+
+    const sx = (W - 2*padPx) / worldW;
+    const sy = (H - 2*padPx) / worldH;
+    const scale = Math.min(sx, sy);
+
+    const drawW = worldW * scale;
+    const drawH = worldH * scale;
+    const offsetX = (W - drawW) / 2;
+    const offsetY = (H - drawH) / 2;
+
+    const xToPx = (x) => offsetX + (x - bounds.minX) * scale;
+    const yToPx = (y) => offsetY + (bounds.maxY - y) * scale;
+
+    return { scale, xToPx, yToPx };
+  }
+
+  function niceStepForLabels(scale) {
+    const pxPerUnit = scale;
+    if (pxPerUnit >= 42) return 1;
+    if (pxPerUnit >= 26) return 2;
+    if (pxPerUnit >= 15) return 5;
+    return 10;
+  }
+
+  function readSettings() {
+    const FONT = {
+      axis: Number(controls.fontAxis.value),
+      ticks: Number(controls.fontTicks.value),
+      point: Number(controls.fontPoint.value),
+      caption: Math.max(14, Number(controls.fontTicks.value))
+    };
+    return {
+      FONT,
+      minorTick: {
+        width: Number(controls.minorTickWidth.value),
+        len: Number(controls.minorTickLen.value)
+      },
+      offsets: {
+        xTick: { dx: Number(controls.xTickDX.value), dy: Number(controls.xTickDY.value) },
+        yTick: { dx: Number(controls.yTickDX.value), dy: Number(controls.yTickDY.value) },
+        origin:{ dx: Number(controls.oDX.value), dy: Number(controls.oDY.value) }
+      }
+    };
+  }
+
+  function drawGrid(bounds, tf, settings) {
+    const { FONT, offsets, minorTick } = settings;
+    const { scale, xToPx, yToPx } = tf;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const startX = Math.floor(bounds.minX);
+    const endX   = Math.ceil(bounds.maxX);
+    const startY = Math.floor(bounds.minY);
+    const endY   = Math.ceil(bounds.maxY);
+
+    // minor grid
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(0,0,0,0.08)";
+    for (let x = startX; x <= endX; x++) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(x), yToPx(bounds.minY));
+      ctx.lineTo(xToPx(x), yToPx(bounds.maxY));
+      ctx.stroke();
+    }
+    for (let y = startY; y <= endY; y++) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(bounds.minX), yToPx(y));
+      ctx.lineTo(xToPx(bounds.maxX), yToPx(y));
+      ctx.stroke();
+    }
+
+    // major grid
+    ctx.strokeStyle = "rgba(0,0,0,0.18)";
+    ctx.lineWidth = 1.2;
+    for (let x = Math.ceil(startX/5)*5; x <= endX; x += 5) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(x), yToPx(bounds.minY));
+      ctx.lineTo(xToPx(x), yToPx(bounds.maxY));
+      ctx.stroke();
+    }
+    for (let y = Math.ceil(startY/5)*5; y <= endY; y += 5) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(bounds.minX), yToPx(y));
+      ctx.lineTo(xToPx(bounds.maxX), yToPx(y));
+      ctx.stroke();
+    }
+
+    // axes (now always included due to computeBounds forcing origin)
+    ctx.strokeStyle = "rgba(0,0,0,0.75)";
+    ctx.lineWidth = 2;
+
+    // X-axis at y=0
+    ctx.beginPath();
+    ctx.moveTo(xToPx(bounds.minX), yToPx(0));
+    ctx.lineTo(xToPx(bounds.maxX), yToPx(0));
+    ctx.stroke();
+
+    // Y-axis at x=0
+    ctx.beginPath();
+    ctx.moveTo(xToPx(0), yToPx(bounds.minY));
+    ctx.lineTo(xToPx(0), yToPx(bounds.maxY));
+    ctx.stroke();
+
+    // axis labels
+    drawTextBox(ctx, "X", xToPx(bounds.maxX) - 12, yToPx(0) - 16, { fontSize: FONT.axis });
+    drawTextBox(ctx, "Y", xToPx(0) + 14, yToPx(bounds.maxY) + 26, { fontSize: FONT.axis });
+
+    const step = niceStepForLabels(scale);
+
+    // ticks + numbers on x-axis
+    for (let x = Math.ceil(startX/step)*step; x <= endX; x += step) {
+      const px = xToPx(x);
+      const py = yToPx(0);
+
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = minorTick.width;
+      ctx.beginPath();
+      ctx.moveTo(px, py - minorTick.len);
+      ctx.lineTo(px, py + minorTick.len);
+      ctx.stroke();
+
+      if (x !== 0) {
+        drawTextBox(ctx, String(x),
+          px + offsets.xTick.dx,
+          py + offsets.xTick.dy,
+          { fontSize: FONT.ticks, align: "center" }
+        );
+      }
+    }
+
+    // ticks + numbers on y-axis
+    for (let y = Math.ceil(startY/step)*step; y <= endY; y += step) {
+      const px = xToPx(0);
+      const py = yToPx(y);
+
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = minorTick.width;
+      ctx.beginPath();
+      ctx.moveTo(px - minorTick.len, py);
+      ctx.lineTo(px + minorTick.len, py);
+      ctx.stroke();
+
+      if (y !== 0) {
+        drawTextBox(ctx, String(y),
+          px + offsets.yTick.dx,
+          py + offsets.yTick.dy,
+          { fontSize: FONT.ticks, align: "right" }
+        );
+      }
+    }
+
+    // origin label
+    drawTextBox(ctx, "O",
+      xToPx(0) + offsets.origin.dx,
+      yToPx(0) + offsets.origin.dy,
+      { fontSize: FONT.ticks }
+    );
+  }
+
+  function drawPolygon(points, tf, settings, showLabels) {
+    const { FONT } = settings;
+    const { xToPx, yToPx } = tf;
+
+    ctx.strokeStyle = "rgba(0,0,0,0.95)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(xToPx(points[0].x), yToPx(points[0].y));
+    for (let i = 1; i < points.length; i++) ctx.lineTo(xToPx(points[i].x), yToPx(points[i].y));
+    ctx.closePath();
+    ctx.stroke();
+
+    labelBoxes = [];
+
+    for (const p of points) {
+      const px = xToPx(p.x), py = yToPx(p.y);
+
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI*2);
+      ctx.fill();
+
+      if (showLabels) {
+        const off = pointOffsets[p.label] || { dx: 20, dy: -20 };
+        const text = `${p.label}(${p.xRaw}, ${p.yRaw})`;
+
+        const bbox = drawTextBox(ctx, text, px + off.dx, py + off.dy, {
+          fontSize: FONT.point, align: "left"
+        });
+
+        labelBoxes.push({ label: p.label, x: bbox.bx, y: bbox.by, w: bbox.bw, h: bbox.bh });
+      }
+    }
+  }
+
+  function drawDiagonals(points, tf) {
+    if (points.length < 4) return;
+    const { xToPx, yToPx } = tf;
+    const A = points[0], B = points[1], C = points[2], D = points[3];
+
+    ctx.save();
+    ctx.setLineDash([10, 8]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.beginPath(); ctx.moveTo(xToPx(A.x), yToPx(A.y)); ctx.lineTo(xToPx(C.x), yToPx(C.y)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xToPx(B.x), yToPx(B.y)); ctx.lineTo(xToPx(D.x), yToPx(D.y)); ctx.stroke();
+    ctx.restore();
+  }
+
+  function hitTestLabel(mx, my) {
+    for (let i = labelBoxes.length - 1; i >= 0; i--) {
+      const b = labelBoxes[i];
+      if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) return b;
+    }
+    return null;
+  }
+
+  canvas.addEventListener("mousemove", (e) => {
+    const { x, y } = canvasPointFromEvent(e);
+
+    if (drag.active) {
+      const dx = x - drag.startMouseX;
+      const dy = y - drag.startMouseY;
+
+      pointOffsets[drag.label].dx = Math.round(drag.startDX + dx);
+      pointOffsets[drag.label].dy = Math.round(drag.startDY + dy);
+      updatePointSliderUI(drag.label);
+
+      drawFromUI();
+      setCanvasCursor("dragging");
+      return;
+    }
+
+    const hit = hitTestLabel(x, y);
+    setCanvasCursor(hit ? "can-drag" : null);
+  });
+
+  canvas.addEventListener("mousedown", (e) => {
+    const { x, y } = canvasPointFromEvent(e);
+    const hit = hitTestLabel(x, y);
+    if (!hit) return;
+
+    drag.active = true;
+    drag.label = hit.label;
+    drag.startMouseX = x;
+    drag.startMouseY = y;
+    drag.startDX = pointOffsets[hit.label].dx;
+    drag.startDY = pointOffsets[hit.label].dy;
+
+    setCanvasCursor("dragging");
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (drag.active) {
+      drag.active = false;
+      drag.label = null;
+      setCanvasCursor(null);
+    }
+  });
+
+  Object.values(controls).forEach(inp => inp.addEventListener("input", () => {
+    refreshValueLabels();
+    drawFromUI();
+  }));
+
+  showDiagonalsEl.addEventListener("change", drawFromUI);
+  showLabelsEl.addEventListener("change", drawFromUI);
+
+  document.getElementById("drawBtn").addEventListener("click", drawFromUI);
+
+  document.getElementById("downloadBtn").addEventListener("click", () => {
+    const link = document.createElement("a");
+    link.download = "graph.png";
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+
+  document.getElementById("resetBtn").addEventListener("click", () => {
+    pointsInput.value = "P(1,-1)\nQ(3,1)\nR(4,10/9)\n";
+    marginUnitsEl.value = 2;
+    showDiagonalsEl.checked = false;
+    showLabelsEl.checked = true;
+
+    controls.fontAxis.value = 20;
+    controls.fontTicks.value = 16;
+    controls.fontPoint.value = 17;
+
+    controls.minorTickWidth.value = 2;
+    controls.minorTickLen.value = 8;
+
+    controls.xTickDX.value = 0;
+    controls.xTickDY.value = 28;
+    controls.yTickDX.value = -20;
+    controls.yTickDY.value = 0;
+
+    controls.oDX.value = 16;
+    controls.oDY.value = 18;
+
+    for (const k of Object.keys(pointOffsets)) pointOffsets[k] = { dx: 20, dy: -20 };
+
+    refreshValueLabels();
+    drawFromUI();
+  });
+
+  function drawFromUI() {
+    try {
+      const pts = parsePoints(pointsInput.value);
+      ensurePointOffsets(pts);
+      rebuildPointControls(pts);
+
+      const settings = readSettings();
+      const marginUnits = Number(marginUnitsEl.value || 0);
+      const bounds = computeBounds(pts, marginUnits);
+
+      const padPx = Math.max(70, settings.FONT.axis*2 + settings.FONT.ticks*2);
+      const tf = makeTransform(bounds, padPx);
+
+      drawGrid(bounds, tf, settings);
+      if (showDiagonalsEl.checked) drawDiagonals(pts, tf);
+      drawPolygon(pts, tf, settings, showLabelsEl.checked);
+
+      drawTextBox(ctx, "Small grid = 1 unit", 22, canvas.height - 22, {
+        fontSize: settings.FONT.caption, align: "left"
+      });
+
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  refreshValueLabels();
+  drawFromUI();
+</script>
+</body>
+</html>
