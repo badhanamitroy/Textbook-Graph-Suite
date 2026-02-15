@@ -229,6 +229,36 @@
       font-size:12px;
       line-height:1.35;
     }
+
+    /* ==========================================================
+       ✅ FIX: Left panel scrollable (desktop)
+       - Left card becomes sticky
+       - Its .body becomes the scroll container
+       ========================================================== */
+    @media (min-width: 1101px){
+      /* make the whole left card stick under the topbar */
+      .wrap > .card:first-child{
+        position: sticky;
+        top: 86px; /* adjust if your topbar height changes */
+      }
+      /* make only the inside scroll */
+      .wrap > .card:first-child .body{
+        max-height: calc(100vh - 120px);
+        overflow: auto;
+        padding-right: 10px;
+      }
+    }
+
+    /* optional: scrollbar styling */
+    .wrap > .card:first-child .body::-webkit-scrollbar{ width: 10px; }
+    .wrap > .card:first-child .body::-webkit-scrollbar-thumb{
+      background: rgba(255,255,255,0.18);
+      border-radius: 999px;
+    }
+    .wrap > .card:first-child .body::-webkit-scrollbar-track{
+      background: rgba(0,0,0,0.12);
+      border-radius: 999px;
+    }
   </style>
 </head>
 
@@ -239,7 +269,7 @@
         Textbook Graph Suit
         <span>paper tables • pan/zoom • fit • export</span>
       </div>
-            <div>
+      <div>
         <button class="good" onclick="location.href='index.html'">← Back</button>
       </div>
     </div>
@@ -255,23 +285,17 @@
           </h2>
           <div class="body">
 
-            <div class="btns">
-              <button id="h_fitBtn">Fit</button>
-              <button class="good" id="h_pngBtn">PNG</button>
-              <button class="good" id="h_svgBtn">SVG</button>
-            </div>
-
             <!-- TABLE INPUT -->
             <div class="tableCard">
               <div class="sheetTitle">
                 <div>Histogram/Polygon — Table Input</div>
                 <small>Paste from Excel/Sheets</small>
               </div>
-                <div class="sheetBtns">
-                  <button id="h_addRow">+ Row</button>
-                  <button id="h_delRow">− Row</button>
-                  <button class="good" id="h_useTable">Use Table → Draw</button>
-                </div>
+              <div class="sheetBtns">
+                <button id="h_addRow">+ Row</button>
+                <button id="h_delRow">− Row</button>
+                <button class="good" id="h_useTable">Use Table → Draw</button>
+              </div>
               <div class="sheetWrap">
                 <table class="paperTable" id="h_table">
                   <thead>
@@ -284,8 +308,6 @@
                   </thead>
                   <tbody></tbody>
                 </table>
-
-
 
                 <div class="sheetHint">
                   ✅ Paste works (tab/newline). Click first cell then paste.<br/>
@@ -376,43 +398,43 @@
             <div class="section">Axis annotations</div>
 
             <div class="two">
-            <div>
+              <div>
                 <label style="color:var(--muted);font-size:13px;">X-axis label text</label>
                 <input id="h_xLabelText" value="শ্রেনীব্যাপ্তি →" />
-            </div>
-            <div>
+              </div>
+              <div>
                 <label style="color:var(--muted);font-size:13px;">Y-axis label text</label>
                 <input id="h_yLabelText" value="গণসংখ্যা →" />
-            </div>
+              </div>
             </div>
 
             <div class="two">
-            <label style="display:flex;align-items:center;gap:10px;">
+              <label style="display:flex;align-items:center;gap:10px;">
                 <input id="h_showAxisLabels" type="checkbox" checked />
                 <span style="color:var(--muted);font-size:13px;">Show axis labels</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;">
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;">
                 <input id="h_axisLabelArrows" type="checkbox" checked />
                 <span style="color:var(--muted);font-size:13px;">Include arrow (↑ / →)</span>
-            </label>
+              </label>
             </div>
 
             <div class="row">
-            <label>Axis label font size</label>
-            <input id="h_fontAxisLabel" type="range" min="10" max="40" value="18" step="1" />
-            <div class="val" id="h_fontAxisLabelVal"></div>
+              <label>Axis label font size</label>
+              <input id="h_fontAxisLabel" type="range" min="10" max="40" value="18" step="1" />
+              <div class="val" id="h_fontAxisLabelVal"></div>
             </div>
 
             <div class="two">
-            <div>
+              <div>
                 <label style="color:var(--muted);font-size:13px;">X label offset (px)</label>
                 <input id="h_xLabelOffset" type="number" value="45" />
-            </div>
-            <div>
+              </div>
+              <div>
                 <label style="color:var(--muted);font-size:13px;">Y label offset (px)</label>
                 <input id="h_yLabelOffset" type="number" value="55" />
+              </div>
             </div>
-            </div>  
             <!-- Axis Annotations -->
 
             <div class="section">Font sizes</div>
@@ -432,8 +454,6 @@
               <div class="val" id="h_fontMidVal"></div>
             </div>
 
-
-
             <div class="hint">
               X-axis ticks show <b>only boundaries</b>. Axis break uses <b>/\\/\\</b> and a fixed <b>5-square gap</b>.
             </div>
@@ -442,6 +462,11 @@
 
         <div class="card">
           <h2>Graph <span class="pill">textbook axis break</span></h2>
+          <div class="btns" style="padding-left: 20px;">
+            <button id="h_fitBtn">Fit</button>
+            <button class="good" id="h_pngBtn">PNG</button>
+            <button class="good" id="h_svgBtn">SVG</button>
+          </div>
           <div class="canvasWrap">
             <canvas id="h_cv" width="980" height="600"></canvas>
             <div class="small">Pan by dragging. Zoom with wheel (zooms to cursor).</div>
@@ -608,58 +633,46 @@ function makeTableGrid(opts){
     const s = $(spanId), i = $(inputId);
     if(s && i) s.textContent = i.value;
   }
-function refreshVals(){
-  setVal('h_zoomVal','h_zoom');
-  setVal('h_fontAxisVal','h_fontAxis');
-  setVal('h_fontTicksVal','h_fontTicks');
-  setVal('h_fontMidVal','h_fontMid');
-  setVal('h_fontAxisLabelVal','h_fontAxisLabel');
-}
-
-function drawAxisAnnotations(params){
-  if(!document.getElementById("h_showAxisLabels")?.checked) return;
-
-  const xTextRaw = document.getElementById("h_xLabelText")?.value ?? "";
-  const yTextRaw = document.getElementById("h_yLabelText")?.value ?? "";
-  const addArrows = document.getElementById("h_axisLabelArrows")?.checked;
-
-  const xOffset = Number(document.getElementById("h_xLabelOffset")?.value ?? 45);
-  const yOffset = Number(document.getElementById("h_yLabelOffset")?.value ?? 55);
-
-  const size = Number(document.getElementById("h_fontAxisLabel")?.value ?? 18);
-
-  // If user doesn't include arrows, we can add them optionally
-  const xText = addArrows ? xTextRaw : xTextRaw.replace(/[→➡]/g, "").trim();
-  const yText = addArrows ? yTextRaw : yTextRaw.replace(/[↑⬆]/g, "").trim();
-
-  ctx.save();
-  ctx.fillStyle = "#000";
-  ctx.globalAlpha = 0.95;
-  ctx.font = `${size}px system-ui`;
-
-  // X label: centered under x-axis
-  // Using the canvas width center tends to look like the image
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(xText, cv.width/2, params.oy + xOffset);
-
-  // Y label: rotated 90° counterclockwise (reads bottom-to-top)
-  ctx.translate(params.ox - yOffset, cv.height/2);
-  ctx.rotate(-Math.PI / 2);
-  ctx.textAlign = "center";
-  ctx.textBaseline = "top";
-  ctx.fillText(yText, 0, 0);
-
-  // Optional arrow glyphs (if you want actual arrow symbols even when text has none)
-  // You can remove this block if you only want arrows inside the text.
-  if(addArrows){
-    // X arrow at end (small)
-    ctx.rotate(Math.PI / 2); // undo rotation context changes safely? (we're inside rotated state)
+  function refreshVals(){
+    setVal('h_zoomVal','h_zoom');
+    setVal('h_fontAxisVal','h_fontAxis');
+    setVal('h_fontTicksVal','h_fontTicks');
+    setVal('h_fontMidVal','h_fontMid');
+    setVal('h_fontAxisLabelVal','h_fontAxisLabel');
   }
 
-  ctx.restore();
-}
+  function drawAxisAnnotations(params){
+    if(!document.getElementById("h_showAxisLabels")?.checked) return;
 
+    const xTextRaw = document.getElementById("h_xLabelText")?.value ?? "";
+    const yTextRaw = document.getElementById("h_yLabelText")?.value ?? "";
+    const addArrows = document.getElementById("h_axisLabelArrows")?.checked;
+
+    const xOffset = Number(document.getElementById("h_xLabelOffset")?.value ?? 45);
+    const yOffset = Number(document.getElementById("h_yLabelOffset")?.value ?? 55);
+
+    const size = Number(document.getElementById("h_fontAxisLabel")?.value ?? 18);
+
+    const xText = addArrows ? xTextRaw : xTextRaw.replace(/[→➡]/g, "").trim();
+    const yText = addArrows ? yTextRaw : yTextRaw.replace(/[↑⬆]/g, "").trim();
+
+    ctx.save();
+    ctx.fillStyle = "#000";
+    ctx.globalAlpha = 0.95;
+    ctx.font = `${size}px system-ui`;
+
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(xText, cv.width/2, params.oy + xOffset);
+
+    ctx.translate(params.ox - yOffset, cv.height/2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.textAlign = "center";
+    ctx.textBaseline = "top";
+    ctx.fillText(yText, 0, 0);
+
+    ctx.restore();
+  }
 
   function parsePair(s){
     const [a,b] = s.split(',').map(t => Number(t.trim()));
@@ -1043,7 +1056,6 @@ function drawAxisAnnotations(params){
       drawAxisBreakGlyph(params);
       drawAxisAnnotations(params);
 
-
       const boundaries = [];
       for(const r of rows) boundaries.push(r.lo);
       boundaries.push(rows[rows.length-1].hi);
@@ -1168,14 +1180,14 @@ function drawAxisAnnotations(params){
   $('h_pngBtn').addEventListener("click", downloadPNG);
   $('h_svgBtn').addEventListener("click", downloadSVG);
 
-    const live = [
+  const live = [
     'h_data','h_showHist','h_showPoly','h_showMidDots','h_showMidLabels',
     'h_showAxisLabels','h_axisLabelArrows',
     'h_xLabelText','h_yLabelText','h_fontAxisLabel','h_xLabelOffset','h_yLabelOffset',
     'h_zoom','h_minorPx','h_majorEvery','h_barAlpha',
     'h_yLabelStep','h_csize','h_origin','h_xSmallPerUnit','h_ySmallPerUnit',
     'h_fontAxis','h_fontTicks','h_fontMid'
-    ];
+  ];
 
   live.forEach(id => {
     const el = $(id);
