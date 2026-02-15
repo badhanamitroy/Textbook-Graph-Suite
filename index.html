@@ -1,172 +1,229 @@
 <!doctype html>
 <html lang="en">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>Textbook Graph Suite</title>
-<style>
-  :root{
-    --bg:#0b1020; --panel:#111a33; --text:#e9eefc; --muted:#9fb0e6; --stroke:rgba(255,255,255,0.10);
-    --good: rgba(61,220,151,0.14);
-    --goodBorder: rgba(61,220,151,0.35);
-  }
-  body{
-    margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
-    background:linear-gradient(180deg,#070b16,#0b1020);
-    color:var(--text);
-    min-height:100vh;
-  }
-  .topbar{
-    position:sticky; top:0; z-index:10;
-    background:rgba(7,11,22,0.78);
-    backdrop-filter: blur(10px);
-    border-bottom:1px solid rgba(255,255,255,0.10);
-  }
-  .topbarInner{
-    width:min(1400px,96vw);
-    margin:0 auto;
-    padding:10px 0;
-    display:flex;
-    gap:12px;
-    align-items:center;
-    justify-content:space-between;
-  }
-  .brand{ display:flex; flex-direction:column; gap:2px; }
-  .brand b{ font-size:14px; letter-spacing:.2px; }
-  .brand span{ color:var(--muted); font-size:12px; }
-  .tabs{ display:flex; gap:8px; flex-wrap:wrap; }
-  .tab{
-    border:1px solid rgba(255,255,255,0.14);
-    background:rgba(255,255,255,0.06);
-    color:var(--text);
-    padding:9px 12px;
-    border-radius:999px;
-    cursor:pointer;
-    font-weight:800;
-    font-size:13px;
-  }
-  .tab.active{
-    background:rgba(255,255,255,0.14);
-    border-color:rgba(255,255,255,0.22);
-  }
-  .wrap{ width:min(1400px,96vw); margin:0 auto; padding:16px 0 22px; }
-  .app{ display:none; }
-  .app.active{ display:block; }
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Graph Paper Suite — Curve • Histogram+Polygon • Ogive • Coordinate Polygon</title>
+  <style>
+    :root{
+      --bg:#0b1020;
+      --panel:#111a33;
+      --text:#e9eefc;
+      --muted:#9fb0e6;
+      --stroke:rgba(255,255,255,0.10);
+      --card:rgba(17,26,51,0.88);
+    }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;
+      background:linear-gradient(180deg,#070b16,#0b1020);
+      color:var(--text);
+      min-height:100vh;
+    }
+    .topbar{
+      position:sticky; top:0; z-index:50;
+      backdrop-filter: blur(10px);
+      background:rgba(7,11,22,0.55);
+      border-bottom:1px solid rgba(255,255,255,0.08);
+    }
+    .topbarInner{
+      width:min(1400px,96vw);
+      margin:0 auto;
+      padding:12px 0;
+      display:flex;
+      gap:10px;
+      align-items:center;
+      justify-content:space-between;
+    }
+    .brand{
+      display:flex; gap:10px; align-items:center;
+      font-weight:800; letter-spacing:.2px;
+    }
+    .brand span{
+      display:inline-block;
+      padding:6px 10px;
+      border:1px solid rgba(255,255,255,0.12);
+      border-radius:999px;
+      background:rgba(255,255,255,0.06);
+      font-size:12px;
+      color:var(--muted);
+      font-weight:650;
+    }
+    .tabs{
+      display:flex; gap:8px; flex-wrap:wrap; justify-content:flex-end;
+    }
+    .tabBtn{
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.06);
+      color:var(--text);
+      padding:9px 12px;
+      border-radius:999px;
+      cursor:pointer;
+      font-weight:750;
+      font-size:13px;
+      opacity:.95;
+      transition:transform .05s ease, background .15s ease, opacity .15s ease;
+    }
+    .tabBtn:hover{ background:rgba(255,255,255,0.10); }
+    .tabBtn:active{ transform:translateY(1px); }
+    .tabBtn.active{
+      background:rgba(61,220,151,0.16);
+      border-color:rgba(61,220,151,0.35);
+    }
 
-  .grid{
-    display:grid;
-    grid-template-columns: 560px 1fr;
-    gap:16px; align-items:start;
-  }
-  @media (max-width: 980px){ .grid{ grid-template-columns: 1fr; } }
+    .page{
+      width:min(1400px,96vw);
+      margin:0 auto;
+      padding:18px 0 28px;
+    }
 
-  .card{
-    background:rgba(17,26,51,0.88);
-    border:1px solid var(--stroke);
-    border-radius:18px;
-    box-shadow:0 20px 55px rgba(0,0,0,0.45);
-    overflow:hidden;
-  }
-  .card h2{
-    margin:0; padding:14px 16px; font-size:16px;
-    border-bottom:1px solid var(--stroke);
-    display:flex; align-items:center; justify-content:space-between; gap:12px;
-  }
-  .pill{
-    font-size:12px; color:var(--muted);
-    border:1px solid rgba(255,255,255,0.12);
-    padding:6px 10px; border-radius:999px;
-    background:rgba(0,0,0,0.18); white-space:nowrap;
-  }
-  .body{ padding:14px 16px; }
-  textarea,input,select{
-    width:100%; box-sizing:border-box;
-    background:rgba(0,0,0,0.25);
-    border:1px solid rgba(255,255,255,0.12);
-    color:var(--text);
-    border-radius:12px;
-    padding:10px 12px;
-    outline:none; font-size:14px;
-  }
-  textarea{ resize:vertical; }
-  .row{ display:flex; gap:10px; align-items:center; margin-top:10px; }
-  .row label{ flex:1; color:var(--muted); font-size:13px; }
-  .row input[type="range"]{ width:220px; }
-  .row .val{ width:74px; text-align:right; font-size:13px; opacity:.95; }
-  .two{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
-  .three{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:10px; }
-  .btns{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
-  button{
-    border:1px solid rgba(255,255,255,0.14);
-    background:rgba(255,255,255,0.08);
-    color:var(--text);
-    padding:10px 12px; border-radius:12px;
-    cursor:pointer; font-weight:900;
-  }
-  button:hover{ background:rgba(255,255,255,0.12); }
-  button.good{ background:var(--good); border-color:var(--goodBorder); }
-  .hint{ margin-top:10px; color:var(--muted); font-size:13px; line-height:1.35; }
-  .section{
-    margin-top:14px;
-    padding-top:12px;
-    border-top:1px solid rgba(255,255,255,0.08);
-    color:#cfe1ff;
-    font-size:13px;
-    letter-spacing:.2px;
-  }
-  .canvasWrap{ padding:12px; }
-  canvas{
-    width:100%; height:auto; display:block;
-    background:#fff; border-radius:14px;
-  }
-  canvas.can-grab{ cursor: grab; }
-  canvas.grabbing{ cursor: grabbing; }
-  canvas.can-move-point{ cursor: move; }
-  canvas.can-move-label{ cursor: grab; }
-  .small{ font-size:12px; color:var(--muted); margin-top:8px; }
-</style>
+    .wrap{
+      width:100%;
+      display:grid;
+      grid-template-columns: 540px 1fr;
+      gap:16px;
+      align-items:start;
+    }
+    @media (max-width: 1100px){
+      .wrap{ grid-template-columns: 1fr; }
+    }
+
+    .card{
+      background:var(--card);
+      border:1px solid var(--stroke);
+      border-radius:18px;
+      box-shadow:0 20px 55px rgba(0,0,0,0.45);
+      overflow:hidden;
+    }
+    .card h2{
+      margin:0; padding:14px 16px; font-size:16px;
+      border-bottom:1px solid var(--stroke);
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+    }
+    .pill{
+      font-size:12px; color:var(--muted);
+      border:1px solid rgba(255,255,255,0.12);
+      padding:6px 10px; border-radius:999px;
+      background:rgba(0,0,0,0.18);
+      white-space:nowrap;
+    }
+    .body{ padding:14px 16px; }
+
+    textarea,input,select{
+      width:100%;
+      background:rgba(0,0,0,0.25);
+      border:1px solid rgba(255,255,255,0.12);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      outline:none;
+      font-size:14px;
+    }
+    textarea{ resize:vertical; }
+
+    .row{ display:flex; gap:10px; align-items:center; margin-top:10px; }
+    .row label{ flex:1; color:var(--muted); font-size:13px; }
+    .row input[type="range"]{ width:220px; }
+    .row .val{ width:72px; text-align:right; font-size:13px; opacity:.95; }
+
+    .two{ display:grid; grid-template-columns: 1fr 1fr; gap:10px; margin-top:10px; }
+    .three{ display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-top:10px; }
+
+    .btns{ display:flex; gap:10px; margin-top:12px; flex-wrap:wrap; }
+    button{
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.08);
+      color:var(--text);
+      padding:10px 12px;
+      border-radius:12px;
+      cursor:pointer;
+      font-weight:800;
+    }
+    button:hover{ background:rgba(255,255,255,0.12); }
+    button.good{
+      background:rgba(61,220,151,0.14);
+      border-color:rgba(61,220,151,0.35);
+    }
+
+    .hint{ margin-top:10px; color:var(--muted); font-size:13px; line-height:1.35; }
+    .section{
+      margin-top:14px;
+      padding-top:12px;
+      border-top:1px solid rgba(255,255,255,0.08);
+      color:#cfe1ff;
+      font-size:13px;
+      letter-spacing:.2px;
+    }
+
+    .canvasWrap{ padding:12px; }
+    canvas{
+      width:100%;
+      height:auto;
+      display:block;
+      background:#fff;
+      border-radius:14px;
+    }
+    .small{ font-size:12px; color:var(--muted); margin-top:8px; }
+
+    /* app visibility */
+    .app{ display:none; }
+    .app.active{ display:block; }
+
+    /* shared canvas cursors */
+    canvas.can-grab{ cursor: grab; }
+    canvas.grabbing{ cursor: grabbing; }
+    canvas.can-move-point{ cursor: move; }
+    canvas.can-move-label{ cursor: grab; }
+  </style>
 </head>
 
 <body>
-
-<div class="topbar">
-  <div class="topbarInner">
-    <div class="brand">
-      <b>Textbook Graph Suite</b>
-      <span>Tabs Navigation • Graph Paper • Fit Everywhere • Pan/Zoom • Textbook Break • Export</span>
-    </div>
-    <div class="tabs">
-      <button class="tab active" data-tab="plotter">Dotted Point Connect</button>
-      <button class="tab" data-tab="hist">Histogram + Polygon</button>
-      <button class="tab" data-tab="ogive">Ogive</button>
+  <div class="topbar">
+    <div class="topbarInner">
+      <div class="brand">
+        Graph Paper Suite
+        <span>textbook break • pan/zoom • fit • export</span>
+      </div>
+      <div class="tabs">
+        <button class="tabBtn active" data-tab="app-curve">Dotted Point Connect</button>
+        <button class="tabBtn" data-tab="app-hist">Histogram + Polygon</button>
+        <button class="tabBtn" data-tab="app-ogive">Ogive</button>
+        <button class="tabBtn" data-tab="app-poly">Coordinate Polygon</button>
+      </div>
     </div>
   </div>
-</div>
 
-<div class="wrap">
+  <div class="page">
 
-  <!-- ===================== APP 1: PLOTTER ===================== -->
-  <section class="app active" id="app-plotter">
-    <div class="grid">
-      <div class="card">
-        <h2>Controls <span class="pill">Fit • drag • pan • zoom • PNG</span></h2>
-        <div class="body">
+    <!-- =========================
+         APP 1: Dotted Point Connect
+         ========================= -->
+    <section id="app-curve" class="app active">
+      <div class="wrap">
+        <div class="card">
+          <h2>
+            Controls
+            <span class="pill">drag • pan • zoom • FIT • PNG</span>
+          </h2>
+          <div class="body">
 
-          <div class="section">Curve input</div>
-          <div class="row">
-            <label>Curve mode</label>
-            <select id="p_mode">
-              <option value="function" selected>Function</option>
-              <option value="points">Points (smooth + draggable)</option>
-            </select>
-          </div>
+            <div class="section">Curve input</div>
 
-          <label style="margin-top:10px;color:var(--muted);font-size:13px;">Function y = (JS in x)</label>
-          <input id="p_fn" value="Math.pow(0.5, x)" />
-          <div class="hint">Example: <b>Math.pow(0.5, x)</b></div>
+            <div class="row">
+              <label>Curve mode</label>
+              <select id="c_mode">
+                <option value="function" selected>Function</option>
+                <option value="points">Points (smooth + draggable)</option>
+              </select>
+            </div>
 
-          <label style="margin-top:10px;color:var(--muted);font-size:13px;">Points (x,y per line)</label>
-          <textarea id="p_points" style="min-height:130px;">2,0.25
+            <label style="margin-top:10px;color:var(--muted);font-size:13px;">Function y = (JS in x)</label>
+            <input id="c_fn" value="Math.pow(0.5, x)" />
+            <div class="hint">Example: <b>Math.pow(0.5, x)</b></div>
+
+            <label style="margin-top:10px;color:var(--muted);font-size:13px;">Points (x,y per line)</label>
+            <textarea id="c_points" style="min-height:130px;">2,0.25
 1,0.5
 0,1
 -1,2
@@ -175,257 +232,259 @@
 -4,16
 -5,32</textarea>
 
-          <div class="row">
-            <label><input id="p_showPoints" type="checkbox" checked /> Show points</label>
-          </div>
-          <div class="row">
-            <label><input id="p_showLabels" type="checkbox" checked /> Show labels (x,y)</label>
-          </div>
-
-          <div class="section">Graph paper scale (ratio)</div>
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">x: small squares per 1 unit</label>
-              <input id="p_xSmallPerUnit" type="number" value="5" min="1" step="1" />
+            <div class="row">
+              <label><input id="c_showPoints" type="checkbox" checked /> Show points</label>
             </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">y: small squares per 1 unit</label>
-              <input id="p_ySmallPerUnit" type="number" value="1" min="1" step="1" />
+            <div class="row">
+              <label><input id="c_showLabels" type="checkbox" checked /> Show labels (x,y)</label>
+            </div>
+
+            <div class="section">Graph paper scale (ratio)</div>
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">x: small squares per 1 unit</label>
+                <input id="c_xSmallPerUnit" type="number" value="5" min="1" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">y: small squares per 1 unit</label>
+                <input id="c_ySmallPerUnit" type="number" value="1" min="1" step="1" />
+              </div>
+            </div>
+
+            <div class="three">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
+                <input id="c_minorPx" type="number" value="10" min="4" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Major every (minor)</label>
+                <input id="c_majorEvery" type="number" value="5" min="2" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Decimals</label>
+                <input id="c_decimals" type="number" value="2" min="0" max="10" step="1" />
+              </div>
+            </div>
+
+            <div class="section">Zoom / Styling</div>
+
+            <div class="row">
+              <label>Zoom (wheel works)</label>
+              <input id="c_zoom" type="range" min="0.4" max="3.0" value="1.0" step="0.05" />
+              <div class="val" id="c_zoomVal"></div>
+            </div>
+
+            <div class="row">
+              <label>Curve thickness</label>
+              <input id="c_curveWidth" type="range" min="1" max="6" value="3" step="0.1" />
+              <div class="val" id="c_curveWidthVal"></div>
+            </div>
+
+            <div class="row">
+              <label>Axis label font (X,Y)</label>
+              <input id="c_axisFont" type="range" min="10" max="28" value="14" />
+              <div class="val" id="c_axisFontVal"></div>
+            </div>
+            <div class="row">
+              <label>Tick numbers font</label>
+              <input id="c_tickFont" type="range" min="8" max="22" value="12" />
+              <div class="val" id="c_tickFontVal"></div>
+            </div>
+            <div class="row">
+              <label>Point label font</label>
+              <input id="c_labelFont" type="range" min="8" max="22" value="13" />
+              <div class="val" id="c_labelFontVal"></div>
+            </div>
+
+            <div class="section">Canvas</div>
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Canvas size (w,h)</label>
+                <input id="c_csize" value="920,560" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
+                <input id="c_origin" value="480,300" />
+              </div>
+            </div>
+
+            <div class="btns">
+              <button id="c_fit">Fit</button>
+              <button id="c_draw">Draw</button>
+              <button id="c_reset">Reset (sample)</button>
+              <button class="good" id="c_download">PNG</button>
+            </div>
+
+            <div class="hint">
+              ✅ Pan: drag empty space • ✅ Move point: drag a point (Points mode) • ✅ Move label: drag a label • ✅ Zoom: mouse wheel
             </div>
           </div>
+        </div>
 
-          <div class="three">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
-              <input id="p_minorPx" type="number" value="10" min="4" step="1" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Major every (minor)</label>
-              <input id="p_majorEvery" type="number" value="5" min="2" step="1" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Decimals</label>
-              <input id="p_decimals" type="number" value="2" min="0" max="10" step="1" />
-            </div>
+        <div class="card">
+          <h2>Graph <span class="pill">single curve line</span></h2>
+          <div class="canvasWrap">
+            <canvas id="c_cv" width="920" height="560"></canvas>
+            <div class="small">Hover a point/label to see cursor change. Wheel zoom keeps origin centered.</div>
           </div>
-
-          <div class="section">Zoom / Styling</div>
-
-          <div class="row">
-            <label>Zoom</label>
-            <input id="p_zoom" type="range" min="0.4" max="3.0" value="1.0" step="0.05" />
-            <div class="val" id="p_zoomVal"></div>
-          </div>
-
-          <div class="row">
-            <label>Curve thickness</label>
-            <input id="p_curveWidth" type="range" min="1" max="6" value="3" step="0.1" />
-            <div class="val" id="p_curveWidthVal"></div>
-          </div>
-
-          <div class="row">
-            <label>Axis label font (X,Y)</label>
-            <input id="p_axisFont" type="range" min="10" max="28" value="14" />
-            <div class="val" id="p_axisFontVal"></div>
-          </div>
-          <div class="row">
-            <label>Tick numbers font</label>
-            <input id="p_tickFont" type="range" min="8" max="22" value="12" />
-            <div class="val" id="p_tickFontVal"></div>
-          </div>
-          <div class="row">
-            <label>Point label font</label>
-            <input id="p_labelFont" type="range" min="8" max="22" value="13" />
-            <div class="val" id="p_labelFontVal"></div>
-          </div>
-
-          <div class="section">Canvas</div>
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Canvas size (w,h)</label>
-              <input id="p_csize" value="920,560" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
-              <input id="p_origin" value="480,300" />
-            </div>
-          </div>
-
-          <div class="btns">
-            <button id="p_fit">Fit</button>
-            <button id="p_draw">Draw</button>
-            <button id="p_reset">Reset (sample)</button>
-            <button class="good" id="p_download">Download PNG</button>
-          </div>
-
-          <div class="hint">
-            ✅ <b>Pan:</b> drag empty space • ✅ <b>Move point:</b> drag a point (Points mode) • ✅ <b>Move label:</b> drag a label • ✅ <b>Zoom:</b> mouse wheel
-          </div>
-
         </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Graph <span class="pill">single curve line</span></h2>
-        <div class="canvasWrap">
-          <canvas id="p_cv" width="920" height="560"></canvas>
-          <div class="small">Wheel zoom keeps origin centered (Plotter). Fit centers + scales to your curve.</div>
-        </div>
-      </div>
-    </div>
-  </section>
+    <!-- =========================
+         APP 2: Histogram + Frequency Polygon
+         ========================= -->
+    <section id="app-hist" class="app">
+      <div class="wrap">
+        <div class="card">
+          <h2>
+            Textbook Histogram + Polygon
+            <span class="pill">5-squares break • /\/\ • FIT • exports</span>
+          </h2>
+          <div class="body">
 
-  <!-- ===================== APP 2: HISTOGRAM ===================== -->
-  <section class="app" id="app-hist">
-    <div class="grid">
-      <div class="card">
-        <h2>Textbook Histogram + Polygon <span class="pill">Fit • 5-squares break • /\/\ • PNG/SVG</span></h2>
-        <div class="body">
-          <div class="hint">
-            Input per line: <b>lowerBoundary, upperBoundary, frequency</b><br/>
-            Example: <code>44.5,49.5,4</code>
-          </div>
+            <div class="hint">
+              Input per line: <b>lowerBoundary, upperBoundary, frequency</b><br/>
+              Example: <code>44.5,49.5,4</code>
+            </div>
 
-          <textarea id="h_data" style="min-height:155px;">44.5,49.5,4
+            <textarea id="h_data" style="min-height:155px;">44.5,49.5,4
 49.5,54.5,8
 54.5,59.5,10
 59.5,64.5,20
 64.5,69.5,12
 69.5,74.5,6</textarea>
 
-          <div class="two">
-            <label style="display:flex;align-items:center;gap:10px;">
-              <input id="h_showHist" type="checkbox" checked />
-              <span style="color:var(--muted);font-size:13px;">Histogram</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;">
-              <input id="h_showPoly" type="checkbox" checked />
-              <span style="color:var(--muted);font-size:13px;">Frequency polygon</span>
-            </label>
-          </div>
-
-          <div class="two">
-            <label style="display:flex;align-items:center;gap:10px;">
-              <input id="h_showMidDots" type="checkbox" checked />
-              <span style="color:var(--muted);font-size:13px;">Midpoint dots</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;">
-              <input id="h_showMidLabels" type="checkbox" />
-              <span style="color:var(--muted);font-size:13px;">Midpoint labels</span>
-            </label>
-          </div>
-
-          <div class="hint">
-            <b>Textbook mode:</b> after the Y-axis we keep <b>5 squares</b>, draw <b>/\/\</b>,
-            and start the first boundary label on the first major line.
-          </div>
-
-          <div class="row">
-            <label>Zoom</label>
-            <input id="h_zoom" type="range" min="0.35" max="4.0" value="1.00" step="0.05" />
-            <div class="val" id="h_zoomVal"></div>
-          </div>
-
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
-              <input id="h_minorPx" type="number" value="10" min="4" step="1" />
+            <div class="two">
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showHist" type="checkbox" checked />
+                <span style="color:var(--muted);font-size:13px;">Histogram</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showPoly" type="checkbox" checked />
+                <span style="color:var(--muted);font-size:13px;">Frequency polygon</span>
+              </label>
             </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Major every (squares)</label>
-              <input id="h_majorEvery" type="number" value="5" min="2" step="1" />
+
+            <div class="two">
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showMidDots" type="checkbox" checked />
+                <span style="color:var(--muted);font-size:13px;">Midpoint dots</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="h_showMidLabels" type="checkbox" />
+                <span style="color:var(--muted);font-size:13px;">Midpoint labels</span>
+              </label>
+            </div>
+
+            <div class="row">
+              <label>Zoom</label>
+              <input id="h_zoom" type="range" min="0.35" max="4.0" value="1.00" step="0.05" />
+              <div class="val" id="h_zoomVal"></div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
+                <input id="h_minorPx" type="number" value="10" min="4" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Major every (squares)</label>
+                <input id="h_majorEvery" type="number" value="5" min="2" step="1" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Y labels step</label>
+                <input id="h_yLabelStep" type="number" value="5" min="1" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Bar opacity</label>
+                <input id="h_barAlpha" type="number" value="0.18" min="0" max="1" step="0.05" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Canvas (w,h)</label>
+                <input id="h_csize" value="980,600" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
+                <input id="h_origin" value="170,500" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">X: squares per 1 unit</label>
+                <input id="h_xSmallPerUnit" type="number" value="1" min="1" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Y: squares per 1 unit</label>
+                <input id="h_ySmallPerUnit" type="number" value="1" min="1" step="1" />
+              </div>
+            </div>
+
+            <div class="section">Font sizes</div>
+            <div class="row">
+              <label>Axis letters (X,Y,O)</label>
+              <input id="h_fontAxis" type="range" min="10" max="40" value="16" step="1" />
+              <div class="val" id="h_fontAxisVal"></div>
+            </div>
+            <div class="row">
+              <label>Tick labels (numbers)</label>
+              <input id="h_fontTicks" type="range" min="10" max="34" value="14" step="1" />
+              <div class="val" id="h_fontTicksVal"></div>
+            </div>
+            <div class="row">
+              <label>Midpoint labels</label>
+              <input id="h_fontMid" type="range" min="10" max="34" value="12" step="1" />
+              <div class="val" id="h_fontMidVal"></div>
+            </div>
+
+            <div class="btns">
+              <button id="h_fitBtn">Fit</button>
+              <button class="good" id="h_pngBtn">PNG</button>
+              <button class="good" id="h_svgBtn">SVG</button>
+            </div>
+
+            <div class="hint">
+              X-axis ticks show <b>only boundaries</b>. Axis break uses a <b>/\/\</b> sign and a fixed <b>5-square gap</b>.
             </div>
           </div>
+        </div>
 
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Y labels step</label>
-              <input id="h_yLabelStep" type="number" value="5" min="1" step="1" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Bar opacity</label>
-              <input id="h_barAlpha" type="number" value="0.18" min="0" max="1" step="0.05" />
-            </div>
-          </div>
-
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Canvas (w,h)</label>
-              <input id="h_csize" value="980,600" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
-              <input id="h_origin" value="170,500" />
-            </div>
-          </div>
-
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">X: squares per 1 unit</label>
-              <input id="h_xSmallPerUnit" type="number" value="1" min="1" step="1" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Y: squares per 1 unit</label>
-              <input id="h_ySmallPerUnit" type="number" value="1" min="1" step="1" />
-            </div>
-          </div>
-
-          <div class="section">Font sizes</div>
-
-          <div class="row">
-            <label>Axis letters (X,Y,O)</label>
-            <input id="h_fontAxis" type="range" min="10" max="40" value="16" step="1" />
-            <div class="val" id="h_fontAxisVal"></div>
-          </div>
-
-          <div class="row">
-            <label>Tick labels (numbers)</label>
-            <input id="h_fontTicks" type="range" min="10" max="34" value="14" step="1" />
-            <div class="val" id="h_fontTicksVal"></div>
-          </div>
-
-          <div class="row">
-            <label>Midpoint labels</label>
-            <input id="h_fontMid" type="range" min="10" max="34" value="12" step="1" />
-            <div class="val" id="h_fontMidVal"></div>
-          </div>
-
-          <div class="btns">
-            <button id="h_fitBtn">Fit</button>
-            <button class="good" id="h_pngBtn">PNG</button>
-            <button class="good" id="h_svgBtn">SVG</button>
-          </div>
-
-          <div class="hint">
-            X-axis ticks show <b>only boundaries</b>: 44.5, 49.5, 54.5, ...
+        <div class="card">
+          <h2>Graph <span class="pill">textbook axis break</span></h2>
+          <div class="canvasWrap">
+            <canvas id="h_cv" width="980" height="600"></canvas>
+            <div class="small">Pan by dragging. Zoom with wheel (zooms to cursor).</div>
           </div>
         </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Graph <span class="pill">textbook axis break + font</span></h2>
-        <div class="canvasWrap">
-          <canvas id="h_cv" width="980" height="600"></canvas>
-          <div class="small">Pan by dragging. Zoom with wheel (zooms to cursor). Fit centers + scales.</div>
-        </div>
-      </div>
-    </div>
-  </section>
+    <!-- =========================
+         APP 3: Ogive
+         ========================= -->
+    <section id="app-ogive" class="app">
+      <div class="wrap">
+        <div class="card">
+          <h2>
+            Ogive (Cumulative Frequency Curve)
+            <span class="pill">textbook break • pan/zoom • FIT • exports</span>
+          </h2>
+          <div class="body">
 
-  <!-- ===================== APP 3: OGIVE ===================== -->
-  <section class="app" id="app-ogive">
-    <div class="grid">
-      <div class="card">
-        <h2>Ogive (Cumulative Frequency Curve) <span class="pill">Fit • 5-squares break • /\/\ • PNG/SVG</span></h2>
-        <div class="body">
+            <div class="hint">
+              Input per line: <b>lowerBoundary, upperBoundary, cumulativeFrequency</b><br/>
+              Example: <code>49.5,54.5,1</code><br/>
+              Plots points at <b>(upperBoundary, cumulativeFrequency)</b> and joins.
+            </div>
 
-          <div class="hint">
-            Input per line: <b>lowerBoundary, upperBoundary, cumulativeFrequency</b><br/>
-            Example: <code>49.5,54.5,1</code><br/>
-            Points plotted at <b>(firstLowerBoundary, 0)</b> and <b>(upperBoundary, cumulativeFrequency)</b>.
-          </div>
-
-          <textarea id="o_data" style="min-height:190px;">49.5,54.5,1
+            <textarea id="o_data" style="min-height:190px;">49.5,54.5,1
 54.5,59.5,3
 59.5,64.5,6
 64.5,69.5,9
@@ -436,150 +495,259 @@
 89.5,94.5,29
 94.5,99.5,30</textarea>
 
-          <div class="two">
-            <label style="display:flex;align-items:center;gap:10px;">
-              <input id="o_showDots" type="checkbox" checked />
-              <span style="color:var(--muted);font-size:13px;">Show dots</span>
-            </label>
-            <label style="display:flex;align-items:center;gap:10px;">
-              <input id="o_showPointLabels" type="checkbox" />
-              <span style="color:var(--muted);font-size:13px;">Show point labels</span>
-            </label>
-          </div>
-
-          <div class="hint">
-            <b>Textbook mode:</b> from origin to the first lower boundary we show a break.
-            First boundary begins after <b>5 squares</b> and uses <b>/\/\</b>.
-          </div>
-
-          <div class="row">
-            <label>Zoom</label>
-            <input id="o_zoom" type="range" min="0.35" max="4.0" value="1.00" step="0.05" />
-            <div class="val" id="o_zoomVal"></div>
-          </div>
-
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
-              <input id="o_minorPx" type="number" value="10" min="4" step="1" />
+            <div class="two">
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="o_showDots" type="checkbox" checked />
+                <span style="color:var(--muted);font-size:13px;">Show dots</span>
+              </label>
+              <label style="display:flex;align-items:center;gap:10px;">
+                <input id="o_showPointLabels" type="checkbox" />
+                <span style="color:var(--muted);font-size:13px;">Show point labels</span>
+              </label>
             </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Major every (squares)</label>
-              <input id="o_majorEvery" type="number" value="5" min="2" step="1" />
+
+            <div class="row">
+              <label>Zoom</label>
+              <input id="o_zoom" type="range" min="0.35" max="4.0" value="1.00" step="0.05" />
+              <div class="val" id="o_zoomVal"></div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Minor square (px)</label>
+                <input id="o_minorPx" type="number" value="10" min="4" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Major every (squares)</label>
+                <input id="o_majorEvery" type="number" value="5" min="2" step="1" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Y labels step</label>
+                <input id="o_yLabelStep" type="number" value="5" min="1" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Curve thickness</label>
+                <input id="o_curveW" type="number" value="4" min="1" max="10" step="1" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Canvas (w,h)</label>
+                <input id="o_csize" value="980,600" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
+                <input id="o_origin" value="170,500" />
+              </div>
+            </div>
+
+            <div class="two">
+              <div>
+                <label style="color:var(--muted);font-size:13px;">X: squares per 1 unit</label>
+                <input id="o_xSmallPerUnit" type="number" value="1" min="1" step="1" />
+              </div>
+              <div>
+                <label style="color:var(--muted);font-size:13px;">Y: squares per 1 unit</label>
+                <input id="o_ySmallPerUnit" type="number" value="1" min="1" step="1" />
+              </div>
+            </div>
+
+            <div class="section">Font sizes</div>
+            <div class="row">
+              <label>Axis letters (X,Y,O)</label>
+              <input id="o_fontAxis" type="range" min="10" max="40" value="16" step="1" />
+              <div class="val" id="o_fontAxisVal"></div>
+            </div>
+            <div class="row">
+              <label>Tick labels (numbers)</label>
+              <input id="o_fontTicks" type="range" min="10" max="34" value="14" step="1" />
+              <div class="val" id="o_fontTicksVal"></div>
+            </div>
+            <div class="row">
+              <label>Point labels</label>
+              <input id="o_fontPoint" type="range" min="10" max="34" value="12" step="1" />
+              <div class="val" id="o_fontPointVal"></div>
+            </div>
+
+            <div class="btns">
+              <button id="o_fitBtn">Fit</button>
+              <button class="good" id="o_pngBtn">PNG</button>
+              <button class="good" id="o_svgBtn">SVG</button>
             </div>
           </div>
+        </div>
 
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Y labels step</label>
-              <input id="o_yLabelStep" type="number" value="5" min="1" step="1" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Curve thickness</label>
-              <input id="o_curveW" type="number" value="4" min="1" max="10" step="1" />
-            </div>
+        <div class="card">
+          <h2>Graph <span class="pill">ogive curve</span></h2>
+          <div class="canvasWrap">
+            <canvas id="o_cv" width="980" height="600"></canvas>
+            <div class="small">Pan by dragging. Zoom with wheel (zooms to cursor).</div>
           </div>
-
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Canvas (w,h)</label>
-              <input id="o_csize" value="980,600" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Origin (ox,oy)</label>
-              <input id="o_origin" value="170,500" />
-            </div>
-          </div>
-
-          <div class="two">
-            <div>
-              <label style="color:var(--muted);font-size:13px;">X: squares per 1 unit</label>
-              <input id="o_xSmallPerUnit" type="number" value="1" min="1" step="1" />
-            </div>
-            <div>
-              <label style="color:var(--muted);font-size:13px;">Y: squares per 1 unit</label>
-              <input id="o_ySmallPerUnit" type="number" value="1" min="1" step="1" />
-            </div>
-          </div>
-
-          <div class="section">Font sizes</div>
-
-          <div class="row">
-            <label>Axis letters (X,Y,O)</label>
-            <input id="o_fontAxis" type="range" min="10" max="40" value="16" step="1" />
-            <div class="val" id="o_fontAxisVal"></div>
-          </div>
-
-          <div class="row">
-            <label>Tick labels (numbers)</label>
-            <input id="o_fontTicks" type="range" min="10" max="34" value="14" step="1" />
-            <div class="val" id="o_fontTicksVal"></div>
-          </div>
-
-          <div class="row">
-            <label>Point labels</label>
-            <input id="o_fontPoint" type="range" min="10" max="34" value="12" step="1" />
-            <div class="val" id="o_fontPointVal"></div>
-          </div>
-
-          <div class="btns">
-            <button id="o_fitBtn">Fit</button>
-            <button class="good" id="o_pngBtn">PNG</button>
-            <button class="good" id="o_svgBtn">SVG</button>
-          </div>
-
         </div>
       </div>
+    </section>
 
-      <div class="card">
-        <h2>Graph <span class="pill">ogive curve</span></h2>
-        <div class="canvasWrap">
-          <canvas id="o_cv" width="980" height="600"></canvas>
-          <div class="small">Pan by dragging. Zoom with wheel (zooms to cursor). Fit centers + scales.</div>
+    <!-- =========================
+         APP 4: Coordinate Polygon (Your new code)
+         ========================= -->
+    <section id="app-poly" class="app">
+      <div class="wrap">
+        <div class="card">
+          <h2>
+            Coordinates → Polygon
+            <span class="pill">labels • fractions • drag labels • FIT • exports</span>
+          </h2>
+          <div class="body">
+
+            <textarea id="p_pointsInput" style="min-height:110px;">P(1,-1)
+Q(3,1)
+R(4,10/9)</textarea>
+
+            <div class="row">
+              <label>Margin (units)</label>
+              <input id="p_marginUnits" type="number" value="2" min="0" step="1" />
+            </div>
+
+            <div class="row">
+              <label><input id="p_showDiagonals" type="checkbox" /> Show diagonals (dashed)</label>
+            </div>
+            <div class="row">
+              <label><input id="p_showLabels" type="checkbox" checked /> Show point labels</label>
+            </div>
+
+            <div class="btns">
+              <button id="p_fitBtn">Fit</button>
+              <button id="p_drawBtn">Draw</button>
+              <button id="p_resetBtn">Reset Sample</button>
+              <button class="good" id="p_pngBtn">PNG</button>
+              <button class="good" id="p_svgBtn">SVG</button>
+            </div>
+
+            <div class="section">Font sizes</div>
+            <div class="row">
+              <label>Axis label (X,Y)</label>
+              <input id="p_fontAxis" type="range" min="12" max="44" value="20" />
+              <div class="val" id="p_fontAxisVal"></div>
+            </div>
+            <div class="row">
+              <label>Tick numbers</label>
+              <input id="p_fontTicks" type="range" min="10" max="34" value="16" />
+              <div class="val" id="p_fontTicksVal"></div>
+            </div>
+            <div class="row">
+              <label>Point labels</label>
+              <input id="p_fontPoint" type="range" min="10" max="34" value="17" />
+              <div class="val" id="p_fontPointVal"></div>
+            </div>
+
+            <div class="section">Minor ticks (thickness + length)</div>
+            <div class="row">
+              <label>Minor tick thickness</label>
+              <input id="p_minorTickWidth" type="range" min="1" max="6" value="2" />
+              <div class="val" id="p_minorTickWidthVal"></div>
+            </div>
+            <div class="row">
+              <label>Minor tick length</label>
+              <input id="p_minorTickLen" type="range" min="4" max="18" value="8" />
+              <div class="val" id="p_minorTickLenVal"></div>
+            </div>
+
+            <div class="section">Reposition axis numbers (ticks)</div>
+            <div class="row">
+              <label>X tick offset X (px)</label>
+              <input id="p_xTickDX" type="range" min="-60" max="60" value="0" />
+              <div class="val" id="p_xTickDXVal"></div>
+            </div>
+            <div class="row">
+              <label>X tick offset Y (px)</label>
+              <input id="p_xTickDY" type="range" min="-80" max="140" value="28" />
+              <div class="val" id="p_xTickDYVal"></div>
+            </div>
+
+            <div class="row">
+              <label>Y tick offset X (px)</label>
+              <input id="p_yTickDX" type="range" min="-160" max="100" value="-20" />
+              <div class="val" id="p_yTickDXVal"></div>
+            </div>
+            <div class="row">
+              <label>Y tick offset Y (px)</label>
+              <input id="p_yTickDY" type="range" min="-60" max="60" value="0" />
+              <div class="val" id="p_yTickDYVal"></div>
+            </div>
+
+            <div class="section">Origin label (O) offsets</div>
+            <div class="row">
+              <label>O offset X (px)</label>
+              <input id="p_oDX" type="range" min="-60" max="160" value="16" />
+              <div class="val" id="p_oDXVal"></div>
+            </div>
+            <div class="row">
+              <label>O offset Y (px)</label>
+              <input id="p_oDY" type="range" min="-60" max="160" value="18" />
+              <div class="val" id="p_oDYVal"></div>
+            </div>
+
+            <div class="section">Per-point label offsets</div>
+            <div class="hint">Hover a label → grab → drag. Fractions stay as fractions.</div>
+            <div id="p_pointControls" style="margin-top:10px; display:grid; gap:10px;"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>XY Graph <span class="pill">auto axes • auto scaling</span></h2>
+          <div class="canvasWrap">
+            <canvas id="p_canvas" width="900" height="700" style="cursor:default;"></canvas>
+            <div class="small">Axes are always shown (origin is forced into bounds).</div>
+          </div>
         </div>
       </div>
-    </div>
-  </section>
+    </section>
 
-</div>
+  </div>
 
 <script>
-/* ===================== TAB SWITCHER ===================== */
+/* ============================
+   NAV (tabs)
+============================ */
 (() => {
-  const tabs = document.querySelectorAll(".tab");
-  const apps = {
-    plotter: document.getElementById("app-plotter"),
-    hist: document.getElementById("app-hist"),
-    ogive: document.getElementById("app-ogive"),
-  };
-  function activate(key){
-    tabs.forEach(t => t.classList.toggle("active", t.dataset.tab === key));
-    Object.entries(apps).forEach(([k,el]) => el.classList.toggle("active", k === key));
+  const buttons = [...document.querySelectorAll(".tabBtn")];
+  const apps = [...document.querySelectorAll(".app")];
+
+  function show(id){
+    apps.forEach(s => s.classList.toggle("active", s.id === id));
+    buttons.forEach(b => b.classList.toggle("active", b.dataset.tab === id));
   }
-  tabs.forEach(t => t.addEventListener("click", () => activate(t.dataset.tab)));
+
+  buttons.forEach(b => b.addEventListener("click", () => show(b.dataset.tab)));
 })();
 
-/* ======================================================================================
-   APP 1: PLOTTER (Fit ADDED), prefixed with p_
-   ====================================================================================== */
+/* ============================
+   APP 1: Dotted Point Connect
+   (adds FIT; everything else kept)
+============================ */
 (() => {
-  const cv = document.getElementById('p_cv');
+  const cv = document.getElementById('c_cv');
   const ctx = cv.getContext('2d');
   const $ = (id) => document.getElementById(id);
 
   const valSpans = {
-    zoomVal: $('p_zoomVal'),
-    curveWidthVal: $('p_curveWidthVal'),
-    axisFontVal: $('p_axisFontVal'),
-    tickFontVal: $('p_tickFontVal'),
-    labelFontVal: $('p_labelFontVal'),
+    zoomVal: $('c_zoomVal'),
+    curveWidthVal: $('c_curveWidthVal'),
+    axisFontVal: $('c_axisFontVal'),
+    tickFontVal: $('c_tickFontVal'),
+    labelFontVal: $('c_labelFontVal'),
   };
+
   function refreshValueLabels(){
-    valSpans.zoomVal.textContent = Number($('p_zoom').value).toFixed(2);
-    valSpans.curveWidthVal.textContent = $('p_curveWidth').value;
-    valSpans.axisFontVal.textContent = $('p_axisFont').value;
-    valSpans.tickFontVal.textContent = $('p_tickFont').value;
-    valSpans.labelFontVal.textContent = $('p_labelFont').value;
+    valSpans.zoomVal.textContent = Number($('c_zoom').value).toFixed(2);
+    valSpans.curveWidthVal.textContent = $('c_curveWidth').value;
+    valSpans.axisFontVal.textContent = $('c_axisFont').value;
+    valSpans.tickFontVal.textContent = $('c_tickFont').value;
+    valSpans.labelFontVal.textContent = $('c_labelFont').value;
   }
 
   function parsePair(s) {
@@ -591,11 +759,7 @@
   function parsePoints(text) {
     return text.split('\n')
       .map(s => s.trim()).filter(Boolean)
-      .map(line => {
-        const [x,y] = line.split(',').map(t => Number(t.trim()));
-        if(!Number.isFinite(x) || !Number.isFinite(y)) return null;
-        return [x,y];
-      })
+      .map(line => parsePair(line))
       .filter(Boolean);
   }
 
@@ -615,7 +779,7 @@
 
   const drag = {
     active: false,
-    mode: null, // "pan" | "point" | "label"
+    mode: null,
     pointIndex: -1,
     startMx: 0,
     startMy: 0,
@@ -658,10 +822,7 @@
     return [x, y];
   }
 
-  function clear() {
-    ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height);
-  }
+  function clear() { ctx.clearRect(0,0,cv.width,cv.height); ctx.fillStyle="#fff"; ctx.fillRect(0,0,cv.width,cv.height); }
 
   function drawGraphPaper(ox, oy, minorPx, majorEvery, zoom) {
     const mp = minorPx * zoom;
@@ -675,7 +836,6 @@
 
     for (let x = ox; x <= cv.width; x += mp) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
     for (let x = ox; x >= 0; x -= mp)        { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
-
     for (let y = oy; y <= cv.height; y += mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
     for (let y = oy; y >= 0; y -= mp)        { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
 
@@ -684,7 +844,6 @@
 
     for (let x = ox; x <= cv.width; x += majorPx) { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
     for (let x = ox; x >= 0; x -= majorPx)        { ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
-
     for (let y = oy; y <= cv.height; y += majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
     for (let y = oy; y >= 0; y -= majorPx)        { ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
 
@@ -745,18 +904,16 @@
     ctx.restore();
   }
 
-  function safeCompileFunction(fnExpr){
-    const f = new Function("x", `return (${fnExpr});`);
-    // probe
-    const t = f(0);
-    if(!Number.isFinite(t)) throw new Error("Function not finite at x=0");
-    return f;
-  }
-
   function drawCurveFromFunction(fnExpr, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom) {
     let f;
-    try { f = safeCompileFunction(fnExpr); }
-    catch (e) { alert("Function error: " + e.message); return; }
+    try {
+      f = new Function("x", `return (${fnExpr});`);
+      const t = f(0);
+      if (!Number.isFinite(t)) throw new Error("not finite at x=0");
+    } catch (e) {
+      alert("Function error: " + e.message);
+      return;
+    }
 
     const mp = minorPx * zoom;
     const sx = mp * xSmallPerUnit;
@@ -766,6 +923,7 @@
     ctx.save();
     ctx.strokeStyle = "#000";
     ctx.lineWidth = curveWidth;
+    ctx.globalAlpha = 1;
 
     ctx.beginPath();
     let started = false;
@@ -794,6 +952,7 @@
     ctx.save();
     ctx.strokeStyle = "#000";
     ctx.lineWidth = curveWidth;
+    ctx.globalAlpha = 1;
 
     ctx.beginPath();
     ctx.moveTo(p[0][0], p[0][1]);
@@ -848,7 +1007,13 @@
 
         ctx.fillText(text, tx, ty);
 
-        labelHitBoxes.push({ i, x: tx, y: ty - h, w: w, h: h + 4 });
+        labelHitBoxes.push({
+          i,
+          x: tx,
+          y: ty - h,
+          w: w,
+          h: h + 4
+        });
       }
     }
 
@@ -856,7 +1021,7 @@
   }
 
   function applyCanvasSize() {
-    const s = parsePair($('p_csize').value);
+    const s = parsePair($('c_csize').value);
     if (!s) return alert("Canvas size format: w,h  (e.g., 920,560)");
     const [w,h] = s;
     if (!(w>100 && h>100)) return alert("Canvas size too small.");
@@ -883,124 +1048,111 @@
   function redraw() {
     applyCanvasSize();
 
-    const origin = parsePair($('p_origin').value);
+    const origin = parsePair($('c_origin').value);
     if (!origin) return alert("Origin format: ox,oy (e.g., 480,300)");
     const [ox,oy] = origin;
 
-    const minorPx = Number($('p_minorPx').value);
-    const majorEvery = Number($('p_majorEvery').value);
-    const xSmallPerUnit = Number($('p_xSmallPerUnit').value);
-    const ySmallPerUnit = Number($('p_ySmallPerUnit').value);
-    const decimals = Math.max(0, Math.min(10, Number($('p_decimals').value) || 2));
-    const zoom = Number($('p_zoom').value);
+    const minorPx = Number($('c_minorPx').value);
+    const majorEvery = Number($('c_majorEvery').value);
+    const xSmallPerUnit = Number($('c_xSmallPerUnit').value);
+    const ySmallPerUnit = Number($('c_ySmallPerUnit').value);
+    const decimals = Math.max(0, Math.min(10, Number($('c_decimals').value) || 2));
+    const zoom = Number($('c_zoom').value);
 
     const axisWidth = 2;
-    const curveWidth = Number($('p_curveWidth').value);
-    const axisFontPx = Number($('p_axisFont').value);
-    const tickFontPx = Number($('p_tickFont').value);
-    const labelFontPx = Number($('p_labelFont').value);
+    const curveWidth = Number($('c_curveWidth').value);
+    const axisFontPx = Number($('c_axisFont').value);
+    const tickFontPx = Number($('c_tickFont').value);
+    const labelFontPx = Number($('c_labelFont').value);
 
-    const mode = $('p_mode').value;
-    const showPoints = $('p_showPoints').checked;
-    const showLabels = $('p_showLabels').checked;
+    const mode = $('c_mode').value;
+    const showPoints = $('c_showPoints').checked;
+    const showLabels = $('c_showLabels').checked;
 
     if (!(minorPx>0 && majorEvery>=2 && xSmallPerUnit>0 && ySmallPerUnit>0)) {
       return alert("Check minorPx / majorEvery / xSmallPerUnit / ySmallPerUnit");
     }
 
-    const points = parsePoints($('p_points').value);
+    const points = parsePoints($('c_points').value);
     ensureLabelOffsets(points);
 
     clear();
     drawGraphPaper(ox, oy, minorPx, majorEvery, zoom);
     drawAxes(ox, oy, axisWidth, axisFontPx, tickFontPx, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
 
-    if (mode === "points") drawCurveFromPoints(points, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
-    else drawCurveFromFunction($('p_fn').value, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
+    if (mode === "points") {
+      drawCurveFromPoints(points, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
+    } else {
+      drawCurveFromFunction($('c_fn').value, ox, oy, curveWidth, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
+    }
 
     drawPointsAndLabels(points, ox, oy, minorPx, xSmallPerUnit, ySmallPerUnit, showPoints, showLabels, labelFontPx, decimals, zoom);
   }
 
-  // ✅ FIT: works for BOTH modes
-  function fitToCurve(){
+  function computePointsBounds(points){
+    let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+    for(const [x,y] of points){
+      if(!Number.isFinite(x) || !Number.isFinite(y)) continue;
+      minX = Math.min(minX,x); maxX = Math.max(maxX,x);
+      minY = Math.min(minY,y); maxY = Math.max(maxY,y);
+    }
+    if(!Number.isFinite(minX)) return null;
+    // also include origin for nicer view
+    minX = Math.min(minX, 0); maxX = Math.max(maxX, 0);
+    minY = Math.min(minY, 0); maxY = Math.max(maxY, 0);
+    if(minX === maxX){ minX -= 1; maxX += 1; }
+    if(minY === maxY){ minY -= 1; maxY += 1; }
+    return {minX,maxX,minY,maxY};
+  }
+
+  function fitToData(){
     applyCanvasSize();
+    const mode = $('c_mode').value;
+    let pts = parsePoints($('c_points').value);
 
-    const minorPx = Number($('p_minorPx').value);
-    const xSmallPerUnit = Number($('p_xSmallPerUnit').value);
-    const ySmallPerUnit = Number($('p_ySmallPerUnit').value);
+    // If function mode: build sample points across view so fit is meaningful
+    if(mode === "function"){
+      let f;
+      try{ f = new Function("x", `return (${ $('c_fn').value });`); }catch{ f = (x)=>NaN; }
+      const sample = [];
+      for(let x=-6; x<=6; x+=0.5){
+        const y = f(x);
+        if(Number.isFinite(y)) sample.push([x,y]);
+      }
+      if(sample.length >= 2) pts = sample;
+    }
 
+    const b = computePointsBounds(pts);
+    if(!b) return;
+
+    const minorPx = Number($('c_minorPx').value);
+    const xSmallPerUnit = Number($('c_xSmallPerUnit').value);
+    const ySmallPerUnit = Number($('c_ySmallPerUnit').value);
+
+    const pad = 70;
     const baseSx = minorPx * xSmallPerUnit;
     const baseSy = minorPx * ySmallPerUnit;
 
-    const padPx = 70;
-    const mode = $('p_mode').value;
+    const needZx = (cv.width - 2*pad) / ((b.maxX - b.minX) * baseSx);
+    const needZy = (cv.height - 2*pad) / ((b.maxY - b.minY) * baseSy);
 
-    let minX=0, maxX=0, minY=0, maxY=0;
-    let ok = false;
-
-    if(mode === "points"){
-      const pts = parsePoints($('p_points').value);
-      if(pts.length >= 1){
-        minX = Math.min(...pts.map(p=>p[0]));
-        maxX = Math.max(...pts.map(p=>p[0]));
-        minY = Math.min(...pts.map(p=>p[1]));
-        maxY = Math.max(...pts.map(p=>p[1]));
-        ok = true;
-      }
-    }else{
-      // sample function around 0 to estimate bounds robustly
-      let f;
-      try { f = safeCompileFunction($('p_fn').value); }
-      catch(e){ alert("Function error: " + e.message); return; }
-
-      // choose a conservative sampling span
-      const span = 10; // world units
-      const samples = 800;
-      minX = -span; maxX = span;
-      minY = Infinity; maxY = -Infinity;
-
-      for(let i=0;i<=samples;i++){
-        const x = minX + (i/samples)*(maxX-minX);
-        const y = f(x);
-        if(!Number.isFinite(y)) continue;
-        if(y < minY) minY = y;
-        if(y > maxY) maxY = y;
-      }
-      if(Number.isFinite(minY) && Number.isFinite(maxY)){
-        // expand slightly to avoid clipping
-        const yPad = (maxY-minY) * 0.08 + 0.5;
-        minY -= yPad; maxY += yPad;
-        ok = true;
-      }
-    }
-
-    if(!ok){
-      alert("Nothing to fit (add points or fix the function).");
-      return;
-    }
-
-    // avoid zero ranges
-    if(Math.abs(maxX-minX) < 1e-9){ maxX += 1; minX -= 1; }
-    if(Math.abs(maxY-minY) < 1e-9){ maxY += 1; minY -= 1; }
-
-    const needZx = (cv.width - 2*padPx) / ((maxX - minX) * baseSx);
-    const needZy = (cv.height - 2*padPx) / ((maxY - minY) * baseSy);
     let z = Math.min(needZx, needZy);
     z = Math.max(0.4, Math.min(3.0, z));
-    $('p_zoom').value = (Math.floor(z*100)/100).toFixed(2);
+    $('c_zoom').value = (Math.floor(z*100)/100).toFixed(2);
 
-    // set origin so center of bounds lands in canvas center
-    const cx = (minX + maxX)/2;
-    const cy = (minY + maxY)/2;
+    const zoom = Number($('c_zoom').value);
+    const mp = minorPx * zoom;
+    const sx = mp * xSmallPerUnit;
+    const sy = mp * ySmallPerUnit;
 
-    const sx = baseSx * z;
-    const sy = baseSy * z;
+    // center bounds
+    const worldCx = (b.minX + b.maxX)/2;
+    const worldCy = (b.minY + b.maxY)/2;
 
-    const ox = cv.width/2 - cx * sx;
-    const oy = cv.height/2 + cy * sy;
+    const ox = cv.width/2 - worldCx*sx;
+    const oy = cv.height/2 + worldCy*sy;
 
-    $('p_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
-
+    $('c_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
     refreshValueLabels();
     redraw();
   }
@@ -1009,15 +1161,15 @@
     redraw();
     const a = document.createElement('a');
     const ts = new Date().toISOString().replace(/[:.]/g,'-');
-    a.download = `plotter-${ts}.png`;
+    a.download = `curve-${ts}.png`;
     a.href = cv.toDataURL("image/png");
     a.click();
   }
 
   function resetSample(){
-    $('p_mode').value = "function";
-    $('p_fn').value = "Math.pow(0.5, x)";
-    $('p_points').value = `2,0.25
+    $('c_mode').value = "function";
+    $('c_fn').value = "Math.pow(0.5, x)";
+    $('c_points').value = `2,0.25
 1,0.5
 0,1
 -1,2
@@ -1026,24 +1178,24 @@
 -4,16
 -5,32`;
 
-    $('p_showPoints').checked = true;
-    $('p_showLabels').checked = true;
+    $('c_showPoints').checked = true;
+    $('c_showLabels').checked = true;
 
-    $('p_xSmallPerUnit').value = 5;
-    $('p_ySmallPerUnit').value = 1;
-    $('p_minorPx').value = 10;
-    $('p_majorEvery').value = 5;
-    $('p_decimals').value = 2;
+    $('c_xSmallPerUnit').value = 5;
+    $('c_ySmallPerUnit').value = 1;
+    $('c_minorPx').value = 10;
+    $('c_majorEvery').value = 5;
+    $('c_decimals').value = 2;
 
-    $('p_zoom').value = 1.0;
-    $('p_curveWidth').value = 3;
+    $('c_zoom').value = 1.0;
+    $('c_curveWidth').value = 3;
 
-    $('p_axisFont').value = 14;
-    $('p_tickFont').value = 12;
-    $('p_labelFont').value = 13;
+    $('c_axisFont').value = 14;
+    $('c_tickFont').value = 12;
+    $('c_labelFont').value = 13;
 
-    $('p_csize').value = "920,560";
-    $('p_origin').value = "480,300";
+    $('c_csize').value = "920,560";
+    $('c_origin').value = "480,300";
 
     labelOffsets.length = 0;
 
@@ -1052,7 +1204,7 @@
   }
 
   function updateOrigin(ox, oy){
-    $('p_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
+    $('c_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
   }
 
   cv.addEventListener("mousemove", (e) => {
@@ -1069,20 +1221,20 @@
         return;
       }
 
-      const points = parsePoints($('p_points').value);
-      const origin = parsePair($('p_origin').value);
+      const points = parsePoints($('c_points').value);
+      const origin = parsePair($('c_origin').value);
       if (!origin) return;
       const [ox,oy] = origin;
 
-      const minorPx = Number($('p_minorPx').value);
-      const xSmallPerUnit = Number($('p_xSmallPerUnit').value);
-      const ySmallPerUnit = Number($('p_ySmallPerUnit').value);
-      const zoom = Number($('p_zoom').value);
+      const minorPx = Number($('c_minorPx').value);
+      const xSmallPerUnit = Number($('c_xSmallPerUnit').value);
+      const ySmallPerUnit = Number($('c_ySmallPerUnit').value);
+      const zoom = Number($('c_zoom').value);
 
       if (drag.mode === "point"){
         const [wx, wy] = canvasToWorld(mx, my, ox, oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom);
         points[drag.pointIndex] = [wx, wy];
-        $('p_points').value = stringifyPoints(points, Number($('p_decimals').value));
+        $('c_points').value = stringifyPoints(points, Number($('c_decimals').value));
         redraw();
         setCanvasCursor("can-move-point");
         return;
@@ -1100,9 +1252,15 @@
     const li = hitTestLabel(mx,my);
     const pi = hitTestPoint(mx,my);
 
-    const mode = $('p_mode').value;
-    if (li >= 0){ setCanvasCursor("can-move-label"); return; }
-    if (pi >= 0 && mode === "points"){ setCanvasCursor("can-move-point"); return; }
+    const mode = $('c_mode').value;
+    if (li >= 0){
+      setCanvasCursor("can-move-label");
+      return;
+    }
+    if (pi >= 0 && mode === "points"){
+      setCanvasCursor("can-move-point");
+      return;
+    }
     setCanvasCursor("can-grab");
   });
 
@@ -1123,7 +1281,7 @@
     }
 
     const pi = hitTestPoint(mx,my);
-    if (pi >= 0 && $('p_mode').value === "points"){
+    if (pi >= 0 && $('c_mode').value === "points"){
       drag.active = true;
       drag.mode = "point";
       drag.pointIndex = pi;
@@ -1133,7 +1291,7 @@
       return;
     }
 
-    const origin = parsePair($('p_origin').value);
+    const origin = parsePair($('c_origin').value);
     if (!origin) return;
     drag.active = true;
     drag.mode = "pan";
@@ -1151,28 +1309,26 @@
     setCanvasCursor("can-grab");
   });
 
-  // Plotter zoom: keep origin centered (your original behavior)
   cv.addEventListener("wheel", (e) => {
     e.preventDefault();
-    const z = Number($('p_zoom').value);
+    const z = Number($('c_zoom').value);
     const delta = (e.deltaY > 0) ? 0.92 : 1.08;
     let nz = z * delta;
     nz = Math.max(0.4, Math.min(3.0, nz));
 
-    $('p_zoom').value = nz.toFixed(2);
+    $('c_zoom').value = nz.toFixed(2);
     refreshValueLabels();
     redraw();
   }, { passive:false });
 
-  $('p_fit').addEventListener('click', fitToCurve);
-  $('p_draw').addEventListener('click', redraw);
-  $('p_download').addEventListener('click', downloadPNG);
-  $('p_reset').addEventListener('click', resetSample);
+  $('c_draw').addEventListener('click', redraw);
+  $('c_download').addEventListener('click', downloadPNG);
+  $('c_reset').addEventListener('click', resetSample);
+  $('c_fit').addEventListener('click', fitToData);
 
-  ['p_mode','p_fn','p_points','p_showPoints','p_showLabels','p_xSmallPerUnit','p_ySmallPerUnit','p_minorPx','p_majorEvery','p_decimals','p_csize','p_origin']
+  ['c_mode','c_fn','c_points','c_showPoints','c_showLabels','c_xSmallPerUnit','c_ySmallPerUnit','c_minorPx','c_majorEvery','c_decimals','c_csize','c_origin']
     .forEach(id => $(id).addEventListener('input', redraw));
-
-  ['p_zoom','p_curveWidth','p_axisFont','p_tickFont','p_labelFont'].forEach(id => {
+  ['c_zoom','c_curveWidth','c_axisFont','c_tickFont','c_labelFont'].forEach(id => {
     $(id).addEventListener('input', () => { refreshValueLabels(); redraw(); });
   });
 
@@ -1181,16 +1337,16 @@
   setCanvasCursor("can-grab");
 })();
 
-/* ======================================================================================
-   APP 2: HISTOGRAM + FREQUENCY POLYGON (Fit INCLUDED), prefixed with h_
-   ====================================================================================== */
+/* ============================
+   APP 2: Histogram + Polygon (your fixed version)
+============================ */
 (() => {
   const cv = document.getElementById('h_cv');
   const ctx = cv.getContext('2d');
   const $ = (id) => document.getElementById(id);
 
-  function setVal(idSpan, idInput){
-    const s = $(idSpan), i = $(idInput);
+  function setVal(spanId, inputId){
+    const s = $(spanId), i = $(inputId);
     if(s && i) s.textContent = i.value;
   }
   function refreshVals(){
@@ -1233,7 +1389,9 @@
     const mp = minorPx * zoom;
     const sx = mp * xSmallPerUnit;
     if(!(breakTo > breakFrom)) return ox + x*sx;
+
     if(x <= breakFrom) return ox + x*sx;
+
     const removed = (breakTo - breakFrom);
     const xCompressed = x - removed;
     return ox + xCompressed*sx + breakGapPx;
@@ -1333,10 +1491,10 @@
   }
 
   function drawAxisBreakGlyph(params){
-    const {ox, oy, minorPx, majorEvery, zoom, breakTo} = params;
-    if(!(breakTo > 0)) return;
+    const {ox, oy, minorPx, majorEvery, zoom, breakFrom, breakTo} = params;
+    if(!(breakTo > breakFrom)) return;
 
-    const gapPx = majorEvery * minorPx * zoom; // 5 squares region
+    const gapPx = majorEvery * minorPx * zoom;
     const cx = ox + gapPx * 0.5;
     const y = oy;
 
@@ -1541,7 +1699,6 @@
 
     const oy = cv.height - pad;
     const ox = pad;
-
     $('h_origin').value = `${Math.round(ox)},${Math.round(oy)}`;
     refreshVals();
     redraw();
@@ -1566,7 +1723,7 @@
 
       const breakFrom = 0;
       const breakTo = minBoundary;
-      const breakGapPx = majorEvery * minorPx * zoom; // 5 squares always
+      const breakGapPx = majorEvery * minorPx * zoom;
 
       const params = {
         ox,oy,
@@ -1603,7 +1760,6 @@
     }
   }
 
-  // Pan/Zoom (Histogram): zoom-to-cursor
   function canvasXY(e){
     const r = cv.getBoundingClientRect();
     return {
@@ -1728,16 +1884,16 @@
   setCursor("can-grab");
 })();
 
-/* ======================================================================================
-   APP 3: OGIVE (Fit INCLUDED), prefixed with o_
-   ====================================================================================== */
+/* ============================
+   APP 3: Ogive (your fixed version)
+============================ */
 (() => {
   const cv = document.getElementById('o_cv');
   const ctx = cv.getContext('2d');
   const $ = (id) => document.getElementById(id);
 
-  function setVal(idSpan, idInput){
-    const s = $(idSpan), i = $(idInput);
+  function setVal(spanId, inputId){
+    const s = $(spanId), i = $(inputId);
     if(s && i) s.textContent = i.value;
   }
   function refreshVals(){
@@ -1783,7 +1939,9 @@
     const mp = minorPx * zoom;
     const sx = mp * xSmallPerUnit;
     if(!(breakTo > breakFrom)) return ox + x*sx;
+
     if(x <= breakFrom) return ox + x*sx;
+
     const removed = (breakTo - breakFrom);
     const xCompressed = x - removed;
     return ox + xCompressed*sx + breakGapPx;
@@ -1891,8 +2049,8 @@
   }
 
   function drawAxisBreakGlyph(params){
-    const {ox, oy, minorPx, majorEvery, zoom, breakTo} = params;
-    if(!(breakTo > 0)) return;
+    const {ox, oy, minorPx, majorEvery, zoom, breakFrom, breakTo} = params;
+    if(!(breakTo > breakFrom)) return;
 
     const gapPx = majorEvery * minorPx * zoom;
     const cx = ox + gapPx * 0.5;
@@ -1946,7 +2104,7 @@
     ctx.restore();
   }
 
-  function drawXUpperBoundaryLabels(params, upperBounds, fonts){
+  function drawXUpperBoundaryLabels(params, xLabels, fonts){
     const {oy} = params;
 
     ctx.save();
@@ -1957,7 +2115,7 @@
 
     const tickLen = 6;
 
-    for(const b of upperBounds){
+    for(const b of xLabels){
       const [px] = worldToCanvas(b, 0, params);
 
       ctx.beginPath();
@@ -1983,6 +2141,7 @@
     ctx.lineWidth=w;
     ctx.lineJoin="round";
     ctx.lineCap="round";
+    ctx.globalAlpha=1;
 
     ctx.beginPath();
     let [x0,y0] = worldToCanvas(points[0].x, points[0].y, params);
@@ -2025,7 +2184,9 @@
   function buildOgivePoints(rows){
     const minLo = rows[0].lo;
     const pts = [{x: minLo, y: 0}];
-    for(const r of rows) pts.push({x: r.hi, y: r.cf});
+    for(const r of rows){
+      pts.push({x: r.hi, y: r.cf});
+    }
     return pts;
   }
 
@@ -2112,7 +2273,6 @@
     }
   }
 
-  // Pan/Zoom (Ogive): zoom-to-cursor
   function canvasXY(e){
     const r = cv.getBoundingClientRect();
     return {
@@ -2236,7 +2396,594 @@
   redraw();
   setCursor("can-grab");
 })();
-</script>
 
+/* ============================
+   APP 4: Coordinate Polygon (your code + FIT + SVG)
+============================ */
+(() => {
+  const canvas = document.getElementById("p_canvas");
+  const ctx = canvas.getContext("2d");
+
+  const pointsInput = document.getElementById("p_pointsInput");
+  const marginUnitsEl = document.getElementById("p_marginUnits");
+  const showDiagonalsEl = document.getElementById("p_showDiagonals");
+  const showLabelsEl = document.getElementById("p_showLabels");
+  const pointControlsWrap = document.getElementById("p_pointControls");
+
+  const controls = {
+    fontAxis: document.getElementById("p_fontAxis"),
+    fontTicks: document.getElementById("p_fontTicks"),
+    fontPoint: document.getElementById("p_fontPoint"),
+
+    minorTickWidth: document.getElementById("p_minorTickWidth"),
+    minorTickLen: document.getElementById("p_minorTickLen"),
+
+    xTickDX: document.getElementById("p_xTickDX"),
+    xTickDY: document.getElementById("p_xTickDY"),
+    yTickDX: document.getElementById("p_yTickDX"),
+    yTickDY: document.getElementById("p_yTickDY"),
+
+    oDX: document.getElementById("p_oDX"),
+    oDY: document.getElementById("p_oDY"),
+  };
+
+  const valSpans = {
+    p_fontAxisVal: document.getElementById("p_fontAxisVal"),
+    p_fontTicksVal: document.getElementById("p_fontTicksVal"),
+    p_fontPointVal: document.getElementById("p_fontPointVal"),
+
+    p_minorTickWidthVal: document.getElementById("p_minorTickWidthVal"),
+    p_minorTickLenVal: document.getElementById("p_minorTickLenVal"),
+
+    p_xTickDXVal: document.getElementById("p_xTickDXVal"),
+    p_xTickDYVal: document.getElementById("p_xTickDYVal"),
+    p_yTickDXVal: document.getElementById("p_yTickDXVal"),
+    p_yTickDYVal: document.getElementById("p_yTickDYVal"),
+
+    p_oDXVal: document.getElementById("p_oDXVal"),
+    p_oDYVal: document.getElementById("p_oDYVal"),
+  };
+
+  const pointOffsets = Object.create(null);
+  let labelBoxes = [];
+  let drag = { active:false, label:null, startMouseX:0, startMouseY:0, startDX:0, startDY:0 };
+
+  function canvasPointFromEvent(e) {
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: (e.clientX - rect.left) * (canvas.width / rect.width),
+      y: (e.clientY - rect.top) * (canvas.height / rect.height),
+    };
+  }
+
+  function parseNumberOrFractionKeepRaw(raw) {
+    const s = String(raw).trim();
+
+    const frac = s.match(/^(-?\d+(?:\.\d+)?)\s*\/\s*(-?\d+(?:\.\d+)?)$/);
+    if (frac) {
+      const num = Number(frac[1]);
+      const den = Number(frac[2]);
+      if (!Number.isFinite(num) || !Number.isFinite(den) || den === 0) {
+        throw new Error("Invalid fraction: " + s);
+      }
+      return { value: num / den, raw: s.replace(/\s+/g, "") };
+    }
+
+    const n = Number(s);
+    if (!Number.isFinite(n)) throw new Error("Invalid number: " + s);
+    return { value: n, raw: s };
+  }
+
+  function drawTextBox(ctx, text, x, y, options = {}) {
+    const {
+      fontSize = 14,
+      padding = 6,
+      bg = "rgba(255,255,255,0.92)",
+      color = "#000",
+      align = "left",
+      baseline = "middle"
+    } = options;
+
+    ctx.font = `${fontSize}px system-ui, Arial`;
+    ctx.textAlign = align;
+    ctx.textBaseline = baseline;
+
+    const w = ctx.measureText(text).width;
+    const h = fontSize;
+
+    let bx = x, by = y - h/2;
+    if (align === "center") bx -= w/2;
+    if (align === "right") bx -= w;
+
+    ctx.fillStyle = bg;
+    ctx.fillRect(bx - padding, by - padding, w + padding*2, h + padding*2);
+
+    ctx.fillStyle = color;
+    ctx.fillText(text, x, y);
+
+    return { bx: bx - padding, by: by - padding, bw: w + padding*2, bh: h + padding*2 };
+  }
+
+  function refreshValueLabels() {
+    for (const [k, el] of Object.entries(valSpans)) {
+      const inputId = k.replace("Val","");
+      const input = document.getElementById(inputId);
+      if (input && el) el.textContent = input.value;
+    }
+  }
+
+  function parsePoints(text) {
+    const lines = text.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+    const pts = [];
+
+    for (const line of lines) {
+      let m = line.match(/^([A-Za-z])\s*[\(:]?\s*([-\d./\s]+)\s*[, ]\s*([-\d./\s]+)\s*\)?$/);
+      if (m) {
+        const xr = parseNumberOrFractionKeepRaw(m[2]);
+        const yr = parseNumberOrFractionKeepRaw(m[3]);
+        pts.push({ label: m[1].toUpperCase(), x:xr.value, y:yr.value, xRaw:xr.raw, yRaw:yr.raw });
+        continue;
+      }
+
+      m = line.match(/^([-\d./\s]+)\s*[, ]\s*([-\d./\s]+)$/);
+      if (m) {
+        const xr = parseNumberOrFractionKeepRaw(m[1]);
+        const yr = parseNumberOrFractionKeepRaw(m[2]);
+        pts.push({ label:"", x:xr.value, y:yr.value, xRaw:xr.raw, yRaw:yr.raw });
+        continue;
+      }
+
+      throw new Error("Could not parse line: " + line);
+    }
+
+    const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    pts.forEach((p, i) => { if (!p.label) p.label = letters[i] || ("P" + (i+1)); });
+    return pts;
+  }
+
+  function ensurePointOffsets(points) {
+    for (const p of points) {
+      if (!pointOffsets[p.label]) pointOffsets[p.label] = { dx: 20, dy: -20 };
+    }
+  }
+
+  function rebuildPointControls(points) {
+    pointControlsWrap.innerHTML = "";
+    for (const p of points) {
+      const label = p.label;
+      const off = pointOffsets[label];
+
+      const card = document.createElement("div");
+      card.style.border = "1px solid rgba(255,255,255,0.10)";
+      card.style.borderRadius = "12px";
+      card.style.padding = "10px";
+      card.style.background = "rgba(0,0,0,0.18)";
+
+      const head = document.createElement("div");
+      head.style.display = "flex";
+      head.style.justifyContent = "space-between";
+      head.style.alignItems = "center";
+      head.style.color = "#cfe1ff";
+      head.style.fontSize = "13px";
+      head.style.marginBottom = "6px";
+      head.innerHTML = `<span>${label} label offset</span><span style="opacity:.85">${label}(${p.xRaw}, ${p.yRaw})</span>`;
+      card.appendChild(head);
+
+      const mkSlider = (key, min, max) => {
+        const row = document.createElement("div");
+        row.style.display = "flex";
+        row.style.gap = "10px";
+        row.style.alignItems = "center";
+        row.style.marginTop = "8px";
+        row.innerHTML = `
+          <label style="flex:1;color:var(--muted);font-size:12px;">${key} (px)</label>
+          <input type="range" min="${min}" max="${max}" value="${off[key]}" data-label="${label}" data-key="${key}" style="width:190px;">
+          <div class="val" id="p_val_${label}_${key}" style="width:60px;text-align:right;font-size:12px;opacity:.9">${off[key]}</div>
+        `;
+        row.querySelector("input").addEventListener("input", (e) => {
+          const lab = e.target.dataset.label;
+          const k = e.target.dataset.key;
+          pointOffsets[lab][k] = Number(e.target.value);
+          document.getElementById(`p_val_${lab}_${k}`).textContent = e.target.value;
+          drawFromUI();
+        });
+        return row;
+      };
+
+      card.appendChild(mkSlider("dx", -220, 260));
+      card.appendChild(mkSlider("dy", -240, 220));
+      pointControlsWrap.appendChild(card);
+    }
+  }
+
+  function updatePointSliderUI(label) {
+    const off = pointOffsets[label];
+    const dxVal = document.getElementById(`p_val_${label}_dx`);
+    const dyVal = document.getElementById(`p_val_${label}_dy`);
+    if (dxVal) dxVal.textContent = off.dx;
+    if (dyVal) dyVal.textContent = off.dy;
+    // (sliders are rebuilt each draw, so no need to sync range value here)
+  }
+
+  function computeBounds(points, marginUnits) {
+    let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+    for (const p of points) {
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }
+
+    // include origin always
+    minX = Math.min(minX, 0); maxX = Math.max(maxX, 0);
+    minY = Math.min(minY, 0); maxY = Math.max(maxY, 0);
+
+    minX -= marginUnits; maxX += marginUnits;
+    minY -= marginUnits; maxY += marginUnits;
+
+    if (minX === maxX) { minX -= 5; maxX += 5; }
+    if (minY === maxY) { minY -= 5; maxY += 5; }
+
+    return { minX, maxX, minY, maxY };
+  }
+
+  function makeTransform(bounds, padPx) {
+    const W = canvas.width, H = canvas.height;
+    const worldW = bounds.maxX - bounds.minX;
+    const worldH = bounds.maxY - bounds.minY;
+
+    const sx = (W - 2*padPx) / worldW;
+    const sy = (H - 2*padPx) / worldH;
+    const scale = Math.min(sx, sy);
+
+    const drawW = worldW * scale;
+    const drawH = worldH * scale;
+    const offsetX = (W - drawW) / 2;
+    const offsetY = (H - drawH) / 2;
+
+    const xToPx = (x) => offsetX + (x - bounds.minX) * scale;
+    const yToPx = (y) => offsetY + (bounds.maxY - y) * scale;
+
+    return { scale, xToPx, yToPx };
+  }
+
+  function niceStepForLabels(scale) {
+    const pxPerUnit = scale;
+    if (pxPerUnit >= 42) return 1;
+    if (pxPerUnit >= 26) return 2;
+    if (pxPerUnit >= 15) return 5;
+    return 10;
+  }
+
+  function readSettings() {
+    const FONT = {
+      axis: Number(controls.fontAxis.value),
+      ticks: Number(controls.fontTicks.value),
+      point: Number(controls.fontPoint.value),
+      caption: Math.max(14, Number(controls.fontTicks.value))
+    };
+    return {
+      FONT,
+      minorTick: {
+        width: Number(controls.minorTickWidth.value),
+        len: Number(controls.minorTickLen.value)
+      },
+      offsets: {
+        xTick: { dx: Number(controls.xTickDX.value), dy: Number(controls.xTickDY.value) },
+        yTick: { dx: Number(controls.yTickDX.value), dy: Number(controls.yTickDY.value) },
+        origin:{ dx: Number(controls.oDX.value), dy: Number(controls.oDY.value) }
+      }
+    };
+  }
+
+  function drawGrid(bounds, tf, settings) {
+    const { FONT, offsets, minorTick } = settings;
+    const { scale, xToPx, yToPx } = tf;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const startX = Math.floor(bounds.minX);
+    const endX   = Math.ceil(bounds.maxX);
+    const startY = Math.floor(bounds.minY);
+    const endY   = Math.ceil(bounds.maxY);
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "rgba(0,0,0,0.08)";
+    for (let x = startX; x <= endX; x++) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(x), yToPx(bounds.minY));
+      ctx.lineTo(xToPx(x), yToPx(bounds.maxY));
+      ctx.stroke();
+    }
+    for (let y = startY; y <= endY; y++) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(bounds.minX), yToPx(y));
+      ctx.lineTo(xToPx(bounds.maxX), yToPx(y));
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = "rgba(0,0,0,0.18)";
+    ctx.lineWidth = 1.2;
+    for (let x = Math.ceil(startX/5)*5; x <= endX; x += 5) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(x), yToPx(bounds.minY));
+      ctx.lineTo(xToPx(x), yToPx(bounds.maxY));
+      ctx.stroke();
+    }
+    for (let y = Math.ceil(startY/5)*5; y <= endY; y += 5) {
+      ctx.beginPath();
+      ctx.moveTo(xToPx(bounds.minX), yToPx(y));
+      ctx.lineTo(xToPx(bounds.maxX), yToPx(y));
+      ctx.stroke();
+    }
+
+    ctx.strokeStyle = "rgba(0,0,0,0.75)";
+    ctx.lineWidth = 2;
+
+    ctx.beginPath();
+    ctx.moveTo(xToPx(bounds.minX), yToPx(0));
+    ctx.lineTo(xToPx(bounds.maxX), yToPx(0));
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.moveTo(xToPx(0), yToPx(bounds.minY));
+    ctx.lineTo(xToPx(0), yToPx(bounds.maxY));
+    ctx.stroke();
+
+    drawTextBox(ctx, "X", xToPx(bounds.maxX) - 12, yToPx(0) - 16, { fontSize: FONT.axis });
+    drawTextBox(ctx, "Y", xToPx(0) + 14, yToPx(bounds.maxY) + 26, { fontSize: FONT.axis });
+
+    const step = niceStepForLabels(scale);
+
+    for (let x = Math.ceil(startX/step)*step; x <= endX; x += step) {
+      const px = xToPx(x);
+      const py = yToPx(0);
+
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = minorTick.width;
+      ctx.beginPath();
+      ctx.moveTo(px, py - minorTick.len);
+      ctx.lineTo(px, py + minorTick.len);
+      ctx.stroke();
+
+      if (x !== 0) {
+        drawTextBox(ctx, String(x),
+          px + offsets.xTick.dx,
+          py + offsets.xTick.dy,
+          { fontSize: FONT.ticks, align: "center" }
+        );
+      }
+    }
+
+    for (let y = Math.ceil(startY/step)*step; y <= endY; y += step) {
+      const px = xToPx(0);
+      const py = yToPx(y);
+
+      ctx.strokeStyle = "rgba(0,0,0,0.55)";
+      ctx.lineWidth = minorTick.width;
+      ctx.beginPath();
+      ctx.moveTo(px - minorTick.len, py);
+      ctx.lineTo(px + minorTick.len, py);
+      ctx.stroke();
+
+      if (y !== 0) {
+        drawTextBox(ctx, String(y),
+          px + offsets.yTick.dx,
+          py + offsets.yTick.dy,
+          { fontSize: FONT.ticks, align: "right" }
+        );
+      }
+    }
+
+    drawTextBox(ctx, "O",
+      xToPx(0) + offsets.origin.dx,
+      yToPx(0) + offsets.origin.dy,
+      { fontSize: FONT.ticks }
+    );
+  }
+
+  function drawPolygon(points, tf, settings, showLabels) {
+    const { FONT } = settings;
+    const { xToPx, yToPx } = tf;
+
+    ctx.strokeStyle = "rgba(0,0,0,0.95)";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(xToPx(points[0].x), yToPx(points[0].y));
+    for (let i = 1; i < points.length; i++) ctx.lineTo(xToPx(points[i].x), yToPx(points[i].y));
+    ctx.closePath();
+    ctx.stroke();
+
+    labelBoxes = [];
+
+    for (const p of points) {
+      const px = xToPx(p.x), py = yToPx(p.y);
+
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(px, py, 5, 0, Math.PI*2);
+      ctx.fill();
+
+      if (showLabels) {
+        const off = pointOffsets[p.label] || { dx: 20, dy: -20 };
+        const text = `${p.label}(${p.xRaw}, ${p.yRaw})`;
+
+        const bbox = drawTextBox(ctx, text, px + off.dx, py + off.dy, {
+          fontSize: FONT.point, align: "left"
+        });
+
+        labelBoxes.push({ label: p.label, x: bbox.bx, y: bbox.by, w: bbox.bw, h: bbox.bh });
+      }
+    }
+  }
+
+  function drawDiagonals(points, tf) {
+    if (points.length < 4) return;
+    const { xToPx, yToPx } = tf;
+    const A = points[0], B = points[1], C = points[2], D = points[3];
+
+    ctx.save();
+    ctx.setLineDash([10, 8]);
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "rgba(0,0,0,0.55)";
+    ctx.beginPath(); ctx.moveTo(xToPx(A.x), yToPx(A.y)); ctx.lineTo(xToPx(C.x), yToPx(C.y)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xToPx(B.x), yToPx(B.y)); ctx.lineTo(xToPx(D.x), yToPx(D.y)); ctx.stroke();
+    ctx.restore();
+  }
+
+  function hitTestLabel(mx, my) {
+    for (let i = labelBoxes.length - 1; i >= 0; i--) {
+      const b = labelBoxes[i];
+      if (mx >= b.x && mx <= b.x + b.w && my >= b.y && my <= b.y + b.h) return b;
+    }
+    return null;
+  }
+
+  canvas.addEventListener("mousemove", (e) => {
+    const { x, y } = canvasPointFromEvent(e);
+
+    if (drag.active) {
+      const dx = x - drag.startMouseX;
+      const dy = y - drag.startMouseY;
+
+      pointOffsets[drag.label].dx = Math.round(drag.startDX + dx);
+      pointOffsets[drag.label].dy = Math.round(drag.startDY + dy);
+
+      updatePointSliderUI(drag.label);
+      drawFromUI();
+      canvas.classList.add("dragging");
+      canvas.style.cursor = "grabbing";
+      return;
+    }
+
+    const hit = hitTestLabel(x, y);
+    canvas.classList.toggle("can-drag", !!hit);
+    canvas.style.cursor = hit ? "grab" : "default";
+  });
+
+  canvas.addEventListener("mousedown", (e) => {
+    const { x, y } = canvasPointFromEvent(e);
+    const hit = hitTestLabel(x, y);
+    if (!hit) return;
+
+    drag.active = true;
+    drag.label = hit.label;
+    drag.startMouseX = x;
+    drag.startMouseY = y;
+    drag.startDX = pointOffsets[hit.label].dx;
+    drag.startDY = pointOffsets[hit.label].dy;
+
+    canvas.classList.add("dragging");
+    canvas.style.cursor = "grabbing";
+  });
+
+  window.addEventListener("mouseup", () => {
+    if (drag.active) {
+      drag.active = false;
+      drag.label = null;
+      canvas.classList.remove("dragging");
+      canvas.style.cursor = "default";
+    }
+  });
+
+  Object.values(controls).forEach(inp => inp.addEventListener("input", () => {
+    refreshValueLabels();
+    drawFromUI();
+  }));
+
+  showDiagonalsEl.addEventListener("change", drawFromUI);
+  showLabelsEl.addEventListener("change", drawFromUI);
+
+  document.getElementById("p_drawBtn").addEventListener("click", drawFromUI);
+
+  document.getElementById("p_pngBtn").addEventListener("click", () => {
+    drawFromUI();
+    const link = document.createElement("a");
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    link.download = `coordinate-polygon-${ts}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  });
+
+  document.getElementById("p_svgBtn").addEventListener("click", () => {
+    drawFromUI();
+    const png = canvas.toDataURL("image/png");
+    const W = canvas.width, H = canvas.height;
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${W}" height="${H}" viewBox="0 0 ${W} ${H}">
+      <image href="${png}" width="${W}" height="${H}" />
+    </svg>`;
+    const blob = new Blob([svg], {type:"image/svg+xml"});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    const ts = new Date().toISOString().replace(/[:.]/g,'-');
+    a.download = `coordinate-polygon-${ts}.svg`;
+    a.href = url;
+    a.click();
+    setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  });
+
+  document.getElementById("p_resetBtn").addEventListener("click", () => {
+    pointsInput.value = "P(1,-1)\nQ(3,1)\nR(4,10/9)\n";
+    marginUnitsEl.value = 2;
+    showDiagonalsEl.checked = false;
+    showLabelsEl.checked = true;
+
+    controls.fontAxis.value = 20;
+    controls.fontTicks.value = 16;
+    controls.fontPoint.value = 17;
+
+    controls.minorTickWidth.value = 2;
+    controls.minorTickLen.value = 8;
+
+    controls.xTickDX.value = 0;
+    controls.xTickDY.value = 28;
+    controls.yTickDX.value = -20;
+    controls.yTickDY.value = 0;
+
+    controls.oDX.value = 16;
+    controls.oDY.value = 18;
+
+    for (const k of Object.keys(pointOffsets)) pointOffsets[k] = { dx: 20, dy: -20 };
+
+    refreshValueLabels();
+    drawFromUI();
+  });
+
+  // FIT button: standardizes “fit” feel across suite (this app already auto-fits, so Fit just redraws cleanly)
+  document.getElementById("p_fitBtn").addEventListener("click", () => {
+    // You can tweak margin here if you want; keeping it user-controlled:
+    drawFromUI();
+  });
+
+  function drawFromUI() {
+    try {
+      const pts = parsePoints(pointsInput.value);
+      ensurePointOffsets(pts);
+      rebuildPointControls(pts);
+
+      const settings = readSettings();
+      const marginUnits = Number(marginUnitsEl.value || 0);
+      const bounds = computeBounds(pts, marginUnits);
+
+      const padPx = Math.max(70, settings.FONT.axis*2 + settings.FONT.ticks*2);
+      const tf = makeTransform(bounds, padPx);
+
+      drawGrid(bounds, tf, settings);
+      if (showDiagonalsEl.checked) drawDiagonals(pts, tf);
+      drawPolygon(pts, tf, settings, showLabelsEl.checked);
+
+      drawTextBox(ctx, "Small grid = 1 unit", 22, canvas.height - 22, {
+        fontSize: settings.FONT.caption, align: "left"
+      });
+
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  refreshValueLabels();
+  drawFromUI();
+})();
+</script>
 </body>
 </html>
