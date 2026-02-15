@@ -138,6 +138,7 @@ canvas.can-move-point{ cursor: move; }
 canvas.can-move-label{ cursor: grab; }
 
 /* Topbar (for pages that want it) */
+
 .topbar{
   position:sticky; top:0; z-index:50;
   backdrop-filter: blur(10px);
