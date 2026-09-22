@@ -266,6 +266,9 @@
 </div>
 
 <script>
+/* Note: parsePair(), clamp() and isoStamp() now come from
+   assets/js/common.js — the local copies that used to live here
+   were removed so we don't shadow the shared versions. */
 (() => {
   const cv = document.getElementById('cv');
   const ctx = cv.getContext('2d');
@@ -286,12 +289,6 @@
     valSpans.axisFontVal.textContent = $('axisFont').value;
     valSpans.tickFontVal.textContent = $('tickFont').value;
     valSpans.labelFontVal.textContent = $('labelFont').value;
-  }
-
-  function parsePair(s) {
-    const [a,b] = s.split(',').map(t => Number(t.trim()));
-    if (!Number.isFinite(a) || !Number.isFinite(b)) return null;
-    return [a,b];
   }
 
   function parsePoints(text) {
@@ -641,8 +638,7 @@
   function downloadPNG() {
     redraw();
     const a = document.createElement('a');
-    const ts = new Date().toISOString().replace(/[:.]/g,'-');
-    a.download = `graph-${ts}.png`;
+    a.download = `graph-${isoStamp()}.png`;
     a.href = cv.toDataURL("image/png");
     a.click();
   }
