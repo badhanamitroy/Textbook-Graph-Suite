@@ -231,17 +231,13 @@
     }
 
     /* ==========================================================
-       ✅ FIX: Left panel scrollable (desktop)
-       - Left card becomes sticky
-       - Its .body becomes the scroll container
+       Left panel scrollable (desktop)
        ========================================================== */
     @media (min-width: 1101px){
-      /* make the whole left card stick under the topbar */
       .wrap > .card:first-child{
         position: sticky;
-        top: 86px; /* adjust if your topbar height changes */
+        top: 86px;
       }
-      /* make only the inside scroll */
       .wrap > .card:first-child .body{
         max-height: calc(100vh - 120px);
         overflow: auto;
@@ -249,7 +245,6 @@
       }
     }
 
-    /* optional: scrollbar styling */
     .wrap > .card:first-child .body::-webkit-scrollbar{ width: 10px; }
     .wrap > .card:first-child .body::-webkit-scrollbar-thumb{
       background: rgba(255,255,255,0.18);
@@ -478,142 +473,11 @@
 
 <script>
 /* ============================
-   Shared: Table Grid Builder
-============================ */
-function makeTableGrid(opts){
-  const {
-    tableId, textareaId,
-    addBtnId, delBtnId, useBtnId,
-    columnsCount = 3
-  } = opts;
-
-  const table = document.getElementById(tableId);
-  const tbody = table.querySelector("tbody");
-  const hidden = document.getElementById(textareaId);
-
-  const btnAdd = document.getElementById(addBtnId);
-  const btnDel = document.getElementById(delBtnId);
-  const btnUse = document.getElementById(useBtnId);
-
-  function makeCellInput(value=""){
-    const inp = document.createElement("input");
-    inp.className = "cellInput";
-    inp.value = value;
-    inp.inputMode = "decimal";
-    inp.autocomplete = "off";
-    inp.spellcheck = false;
-    return inp;
-  }
-
-  function renumber(){
-    [...tbody.querySelectorAll("tr")].forEach((tr,i)=>{
-      tr.querySelector(".rowIndex").textContent = String(i+1);
-    });
-  }
-
-  function addRow(values){
-    const tr = document.createElement("tr");
-
-    const idx = document.createElement("td");
-    idx.className = "rowIndex";
-    idx.textContent = String(tbody.children.length + 1);
-    tr.appendChild(idx);
-
-    for(let c=0;c<columnsCount;c++){
-      const td = document.createElement("td");
-      const inp = makeCellInput((values && values[c]) ? values[c] : "");
-      td.appendChild(inp);
-      tr.appendChild(td);
-    }
-
-    tbody.appendChild(tr);
-    renumber();
-  }
-
-  function delRow(){
-    if(tbody.children.length > 1) tbody.removeChild(tbody.lastElementChild);
-    renumber();
-  }
-
-  function tableToText(){
-    const lines = [];
-    for(const tr of [...tbody.querySelectorAll("tr")]){
-      const inputs = [...tr.querySelectorAll("input.cellInput")];
-      const vals = inputs.map(i => i.value.trim());
-      const allEmpty = vals.every(v => !v);
-      if(allEmpty) continue;
-      lines.push(vals.join(","));
-    }
-    return lines.join("\n");
-  }
-
-  function textToTable(text){
-    tbody.innerHTML = "";
-    const lines = text.split(/\r?\n/).map(s=>s.trim()).filter(Boolean);
-    if(lines.length === 0){
-      addRow();
-      return;
-    }
-    for(const line of lines){
-      const parts = line.split(",").map(s=>s.trim());
-      addRow(parts.slice(0, columnsCount));
-    }
-  }
-
-  table.addEventListener("paste", (e) => {
-    const active = document.activeElement;
-    if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
-    e.preventDefault();
-
-    const text = (e.clipboardData || window.clipboardData).getData("text");
-    const rows = text.split(/\r?\n/).filter(r=>r.length);
-    const grid = rows.map(r => r.split("\t"));
-
-    const startTd = active.closest("td");
-    const startTr = active.closest("tr");
-    const r0 = [...tbody.children].indexOf(startTr);
-    const c0 = [...startTr.querySelectorAll("td")].indexOf(startTd) - 1;
-
-    while(tbody.children.length < r0 + grid.length) addRow();
-
-    for(let r=0;r<grid.length;r++){
-      const tr = tbody.children[r0 + r];
-      const ins = [...tr.querySelectorAll("input.cellInput")];
-      for(let c=0;c<grid[r].length;c++){
-        const cc = c0 + c;
-        if(cc >= 0 && cc < columnsCount){
-          ins[cc].value = grid[r][c].trim();
-        }
-      }
-    }
-  });
-
-  table.addEventListener("keydown", (e) => {
-    const active = document.activeElement;
-    if(!(active instanceof HTMLInputElement) || !active.classList.contains("cellInput")) return;
-    if(e.key === "Enter"){
-      e.preventDefault();
-      const all = [...table.querySelectorAll("input.cellInput")];
-      const i = all.indexOf(active);
-      if(i >= 0 && i < all.length-1) all[i+1].focus();
-    }
-  });
-
-  btnAdd?.addEventListener("click", () => addRow());
-  btnDel?.addEventListener("click", () => delRow());
-
-  btnUse?.addEventListener("click", () => {
-    hidden.value = tableToText();
-    hidden.dispatchEvent(new Event("input", {bubbles:true}));
-  });
-
-  textToTable(hidden.value);
-
-  return { textToTable };
-}
-
-/* ============================
    APP: Histogram + Polygon
+   (makeTableGrid, worldToCanvas/canvasToWorld, drawGraphPaper,
+   arrowhead, drawAxes, drawAxisBreakGlyph, drawYAxisLabels,
+   drawXBoundaryLabels, drawAxisAnnotations, parsePair, clamp,
+   isoStamp all now come from assets/js/common.js)
 ============================ */
 (() => {
   makeTableGrid({
@@ -641,43 +505,16 @@ function makeTableGrid(opts){
     setVal('h_fontAxisLabelVal','h_fontAxisLabel');
   }
 
-  function drawAxisAnnotations(params){
-    if(!document.getElementById("h_showAxisLabels")?.checked) return;
-
-    const xTextRaw = document.getElementById("h_xLabelText")?.value ?? "";
-    const yTextRaw = document.getElementById("h_yLabelText")?.value ?? "";
-    const addArrows = document.getElementById("h_axisLabelArrows")?.checked;
-
-    const xOffset = Number(document.getElementById("h_xLabelOffset")?.value ?? 45);
-    const yOffset = Number(document.getElementById("h_yLabelOffset")?.value ?? 55);
-
-    const size = Number(document.getElementById("h_fontAxisLabel")?.value ?? 18);
-
-    const xText = addArrows ? xTextRaw : xTextRaw.replace(/[→➡]/g, "").trim();
-    const yText = addArrows ? yTextRaw : yTextRaw.replace(/[↑⬆]/g, "").trim();
-
-    ctx.save();
-    ctx.fillStyle = "#000";
-    ctx.globalAlpha = 0.95;
-    ctx.font = `${size}px system-ui`;
-
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.fillText(xText, cv.width/2, params.oy + xOffset);
-
-    ctx.translate(params.ox - yOffset, cv.height/2);
-    ctx.rotate(-Math.PI / 2);
-    ctx.textAlign = "center";
-    ctx.textBaseline = "top";
-    ctx.fillText(yText, 0, 0);
-
-    ctx.restore();
-  }
-
-  function parsePair(s){
-    const [a,b] = s.split(',').map(t => Number(t.trim()));
-    if(!Number.isFinite(a) || !Number.isFinite(b)) return null;
-    return [a,b];
+  function readAnnotation(){
+    return {
+      show: $('h_showAxisLabels')?.checked,
+      xText: $('h_xLabelText')?.value ?? "",
+      yText: $('h_yLabelText')?.value ?? "",
+      addArrows: $('h_axisLabelArrows')?.checked,
+      xOffset: $('h_xLabelOffset')?.value,
+      yOffset: $('h_yLabelOffset')?.value,
+      fontSize: $('h_fontAxisLabel')?.value,
+    };
   }
 
   function parseData(text){
@@ -703,88 +540,6 @@ function makeTableGrid(opts){
     cv.height = Math.floor(h);
   }
 
-  function xMapWithBreak(x, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx){
-    const mp = minorPx * zoom;
-    const sx = mp * xSmallPerUnit;
-    if(!(breakTo > breakFrom)) return ox + x*sx;
-    if(x <= breakFrom) return ox + x*sx;
-    const removed = (breakTo - breakFrom);
-    const xCompressed = x - removed;
-    return ox + xCompressed*sx + breakGapPx;
-  }
-
-  function xUnmapWithBreak(px, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx){
-    const mp = minorPx * zoom;
-    const sx = mp * xSmallPerUnit;
-    if(!(breakTo > breakFrom)) return (px-ox)/sx;
-
-    const breakFromPx = ox + breakFrom*sx;
-    const afterGapStartPx = breakFromPx + breakGapPx;
-
-    if(px <= breakFromPx) return (px-ox)/sx;
-    if(px < afterGapStartPx) return breakFrom;
-
-    const removed = (breakTo - breakFrom);
-    const xCompressed = (px - ox - breakGapPx)/sx;
-    return xCompressed + removed;
-  }
-
-  function worldToCanvas(x,y, params){
-    const {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom, breakFrom, breakTo, breakGapPx} = params;
-    const mp = minorPx * zoom;
-    const sy = mp * ySmallPerUnit;
-    const px = xMapWithBreak(x, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx);
-    const py = oy - y*sy;
-    return [px, py];
-  }
-
-  function canvasToWorld(px,py, params){
-    const {ox,oy, minorPx, xSmallPerUnit, ySmallPerUnit, zoom, breakFrom, breakTo, breakGapPx} = params;
-    const mp = minorPx * zoom;
-    const sy = mp * ySmallPerUnit;
-    const x = xUnmapWithBreak(px, ox, minorPx, xSmallPerUnit, zoom, breakFrom, breakTo, breakGapPx);
-    const y = (oy - py)/sy;
-    return [x,y];
-  }
-
-  function clear(){
-    ctx.clearRect(0,0,cv.width,cv.height);
-    ctx.fillStyle="#fff";
-    ctx.fillRect(0,0,cv.width,cv.height);
-  }
-
-  function drawGraphPaper(ox,oy, minorPx, majorEvery, zoom){
-    const mp = minorPx * zoom;
-    const majorPx = mp * majorEvery;
-
-    ctx.save();
-    ctx.strokeStyle="#000";
-
-    ctx.globalAlpha=0.12; ctx.lineWidth=1;
-    for(let x=ox; x<=cv.width; x+=mp){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
-    for(let x=ox; x>=0; x-=mp){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
-    for(let y=oy; y<=cv.height; y+=mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
-    for(let y=oy; y>=0; y-=mp){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
-
-    ctx.globalAlpha=0.35; ctx.lineWidth=1.5;
-    for(let x=ox; x<=cv.width; x+=majorPx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
-    for(let x=ox; x>=0; x-=majorPx){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,cv.height); ctx.stroke(); }
-    for(let y=oy; y<=cv.height; y+=majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
-    for(let y=oy; y>=0; y-=majorPx){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(cv.width,y); ctx.stroke(); }
-
-    ctx.restore();
-  }
-
-  function arrowhead(x1,y1,x2,y2,size=10){
-    const ang = Math.atan2(y2-y1,x2-x1);
-    ctx.beginPath();
-    ctx.moveTo(x2,y2);
-    ctx.lineTo(x2 - size*Math.cos(ang - Math.PI/7), y2 - size*Math.sin(ang - Math.PI/7));
-    ctx.lineTo(x2 - size*Math.cos(ang + Math.PI/7), y2 - size*Math.sin(ang + Math.PI/7));
-    ctx.closePath();
-    ctx.fill();
-  }
-
   function readFonts(){
     return {
       axis: Number($('h_fontAxis')?.value ?? 16),
@@ -793,111 +548,11 @@ function makeTableGrid(opts){
     };
   }
 
-  function drawAxes(ox,oy, fonts){
-    ctx.save();
-    ctx.strokeStyle="#000";
-    ctx.fillStyle="#000";
-    ctx.globalAlpha=0.95;
-    ctx.lineWidth=2;
-
-    ctx.beginPath(); ctx.moveTo(0,oy); ctx.lineTo(cv.width,oy); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(ox,cv.height); ctx.lineTo(ox,0); ctx.stroke();
-
-    arrowhead(0,oy,cv.width,oy,10);
-    arrowhead(ox,cv.height,ox,0,10);
-
-    ctx.font = `${fonts.axis}px system-ui`;
-    ctx.fillText("X", cv.width-18, oy+18);
-    ctx.fillText("Y", ox+10, 16);
-    ctx.fillText("O", ox+6, oy-6);
-
-    ctx.restore();
-  }
-
-  function drawAxisBreakGlyph(params){
-    const {ox, oy, minorPx, majorEvery, zoom, breakFrom, breakTo} = params;
-    if(!(breakTo > breakFrom)) return;
-
-    const gapPx = majorEvery * minorPx * zoom;
-    const cx = ox + gapPx * 0.5;
-    const y = oy;
-
-    const amp = 10;
-    const step = 12;
-
-    ctx.save();
-    ctx.strokeStyle = "#000";
-    ctx.lineWidth = 2;
-    ctx.globalAlpha = 0.95;
-
-    ctx.beginPath();
-    ctx.moveTo(cx - step, y - amp);
-    ctx.lineTo(cx - step/2, y + amp);
-    ctx.lineTo(cx, y - amp);
-    ctx.lineTo(cx + step/2, y + amp);
-    ctx.lineTo(cx + step, y - amp);
-    ctx.stroke();
-    ctx.restore();
-  }
-
   function computeBounds(rows){
     const minX = Math.min(...rows.map(r => r.lo));
     const maxX = Math.max(...rows.map(r => r.hi));
     const maxY = Math.max(...rows.map(r => r.f), 1);
     return {minX,maxX,maxY};
-  }
-
-  function drawYAxisLabels(params, yMax, fonts){
-    const {ox,oy, minorPx, ySmallPerUnit, zoom} = params;
-    const mp = minorPx * zoom;
-    const sy = mp * ySmallPerUnit;
-    const step = Math.max(1, Number($('h_yLabelStep')?.value ?? 5));
-
-    ctx.save();
-    ctx.fillStyle="#000";
-    ctx.strokeStyle="#000";
-    ctx.font = `${fonts.ticks}px system-ui`;
-    ctx.globalAlpha=0.95;
-
-    for(let y=0; y<=yMax; y+=step){
-      const py = oy - y*sy;
-      ctx.beginPath();
-      ctx.moveTo(ox-5, py);
-      ctx.lineTo(ox+5, py);
-      ctx.stroke();
-
-      if(y !== 0){
-        ctx.textAlign="right";
-        ctx.textBaseline="middle";
-        ctx.fillText(String(y), ox-8, py);
-      }
-    }
-    ctx.restore();
-  }
-
-  function drawXBoundaryLabels(params, boundaries, fonts){
-    const {oy} = params;
-
-    ctx.save();
-    ctx.fillStyle="#000";
-    ctx.strokeStyle="#000";
-    ctx.font = `${fonts.ticks}px system-ui`;
-    ctx.globalAlpha=0.95;
-
-    const tickLen = 6;
-
-    for(const b of boundaries){
-      const [px] = worldToCanvas(b, 0, params);
-      ctx.beginPath();
-      ctx.moveTo(px, oy - tickLen);
-      ctx.lineTo(px, oy + tickLen);
-      ctx.stroke();
-
-      ctx.textAlign="center";
-      ctx.textBaseline="top";
-      ctx.fillText(String(b), px, oy + 10);
-    }
-    ctx.restore();
   }
 
   function drawHistogram(rows, params){
@@ -1050,19 +705,19 @@ function makeTableGrid(opts){
 
       const {maxY} = computeBounds(rows);
 
-      clear();
-      drawGraphPaper(params.ox, params.oy, params.minorPx, params.majorEvery, params.zoom);
-      drawAxes(params.ox, params.oy, fonts);
-      drawAxisBreakGlyph(params);
-      drawAxisAnnotations(params);
+      clearCanvas(ctx, cv);
+      drawGraphPaper(ctx, cv, params.ox, params.oy, params.minorPx, params.majorEvery, params.zoom);
+      drawAxes(ctx, cv, params.ox, params.oy, fonts);
+      drawAxisBreakGlyph(ctx, params);
+      drawAxisAnnotations(ctx, cv, params, readAnnotation());
 
       const boundaries = [];
       for(const r of rows) boundaries.push(r.lo);
       boundaries.push(rows[rows.length-1].hi);
       const uniq = [...new Set(boundaries)].sort((a,b)=>a-b);
-      drawXBoundaryLabels(params, uniq, fonts);
+      drawXBoundaryLabels(ctx, params, uniq, fonts);
 
-      drawYAxisLabels(params, maxY, fonts);
+      drawYAxisLabels(ctx, params, maxY, fonts, $('h_yLabelStep')?.value ?? 5);
 
       if($('h_showHist')?.checked) drawHistogram(rows, params);
       if($('h_showPoly')?.checked) drawFrequencyPolygon(rows, params, fonts);
@@ -1154,8 +809,7 @@ function makeTableGrid(opts){
   function downloadPNG(){
     redraw();
     const a = document.createElement("a");
-    const ts = new Date().toISOString().replace(/[:.]/g,'-');
-    a.download = `hist-poly-textbook-${ts}.png`;
+    a.download = `hist-poly-textbook-${isoStamp()}.png`;
     a.href = cv.toDataURL("image/png");
     a.click();
   }
@@ -1169,8 +823,7 @@ function makeTableGrid(opts){
     const blob = new Blob([svg], {type:"image/svg+xml"});
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
-    const ts = new Date().toISOString().replace(/[:.]/g,'-');
-    a.download = `hist-poly-textbook-${ts}.svg`;
+    a.download = `hist-poly-textbook-${isoStamp()}.svg`;
     a.href = url;
     a.click();
     setTimeout(()=>URL.revokeObjectURL(url), 4000);
