@@ -44,6 +44,31 @@
       color:var(--muted);
       font-weight:600;
     }
+
+    /* Developer section fix */
+    .dev-head{
+      display:flex;
+      align-items:center;
+      gap:16px;
+      margin-bottom:14px;
+    }
+    .dev-photo{
+      width:96px;
+      height:96px;
+      flex:0 0 96px;
+      border-radius:50%;
+      object-fit:cover;
+      object-position:center top;
+      border:3px solid rgba(255,255,255,.35);
+      box-shadow:0 2px 8px rgba(0,0,0,.25);
+    }
+    .dev-head h3{ margin:0 0 4px; }
+    .dev-name{ margin:0; font-weight:700; color:var(--text); }
+    .dev-intro p + p{ margin-top:12px; }
+
+    @media (max-width:480px){
+      .dev-head{ flex-direction:column; text-align:center; }
+    }
   </style>
 </head>
 <body>
@@ -97,19 +122,23 @@
 
     <!-- Developer Introduction Section -->
     <div class="dev-intro">
-      <h3>About the Developer</h3>
-      <img src="BadhanDP.jpg">
+      <div class="dev-head">
+        <img class="dev-photo" src="BadhanDP.jpg" alt="Badhan Roy Amit">
+        <div>
+          <h3>About the Developer</h3>
+          <p class="dev-name">Badhan Roy Amit</p>
+        </div>
+      </div>
 
-      <p><strong>Badhan Roy Amit</strong> </p>
-<br>
-      <p>Introducing <b>Textbook-Graph-Suite</b>, a tool built from the real challenges I faced while preparing lecture sheets and question papers during my (Part time remote freelance) work with several ed-tech organizations like 10 minute School, Victory Battles, ACS Future School.</p>
+      <p>Introducing <b>Textbook-Graph-Suite</b>, a tool built from the real challenges I faced while preparing lecture sheets and question papers during my (part-time remote freelance) work with several ed-tech organizations like 10 Minute School, Victory Battles, ACS Future School.</p>
 
       <p>Again and again, I needed graphs and coordinate figures that looked exactly like traditional textbook visuals. Tools like Desmos are great, but their style didn’t match the strict academic formatting required. I even tried solving this with Python earlier, but it still wasn’t efficient enough and I often ended up drawing graphs manually, which was slow and impractical.</p>
 
       <p>While learning JavaScript, I finally decided to create my own solution. Every part was redesigned and refined to match authentic textbook styling.</p>
+
       <p>Connect with me:<br>
-        <a href="https://www.facebook.com/BadhanAmitRoy.25/" target="_blank" style="color: aliceblue;">Facebook</a> ·
-        <a href="https://www.linkedin.com/in/badhan-roy-444a32250/" target="_blank" style="color: aliceblue;">LinkedIn</a>
+        <a href="https://www.facebook.com/BadhanAmitRoy.25/" target="_blank" rel="noopener" style="color: aliceblue;">Facebook</a> ·
+        <a href="https://www.linkedin.com/in/badhan-roy-444a32250/" target="_blank" rel="noopener" style="color: aliceblue;">LinkedIn</a>
       </p>
     </div>
 
